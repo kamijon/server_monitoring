@@ -7,7 +7,7 @@ NC='\033[0m'
 echo -e "${GREEN}Updating and upgrading server...${NC}"
 apt update && apt upgrade -y
 
-echo -e "${GREEN}Installing Python3, pip3, and git...${NC}"
+echo -e "${GREEN}Installing Python3, pip3, git, and curl...${NC}"
 apt install -y python3 python3-pip git curl
 
 echo -e "${GREEN}Cloning the project from GitHub...${NC}"
@@ -18,6 +18,11 @@ echo -e "${GREEN}Installing Python dependencies...${NC}"
 cd server-monitoring
 pip3 install -r requirements.txt
 
+# Automatically detect public IP address
+SERVER_IP=$(curl -s ifconfig.me)
+
+echo -e "${GREEN}Detected Server IP: ${SERVER_IP}${NC}"
+
 echo -e "${GREEN}Creating systemd service...${NC}"
 cat > /etc/systemd/system/server-monitoring.service << EOL
 [Unit]
@@ -27,7 +32,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/opt/server-monitoring
-ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host $SERVER_IP --port 8000
 Restart=always
 
 [Install]
@@ -39,5 +44,5 @@ systemctl daemon-reload
 systemctl enable server-monitoring
 systemctl start server-monitoring
 
-echo -e "${GREEN}Installation complete. Server Monitoring is now running!${NC}"
+echo -e "${GREEN}Installation complete. Server Monitoring is now running on http://$SERVER_IP:_
 
