@@ -12,19 +12,19 @@ apt install -y python3 python3-pip git curl
 
 echo -e "${GREEN}Cloning the project from GitHub...${NC}"
 cd /opt
-git clone https://github.com/kamijon/server-monitoring.git
+
+if [ -d "server-monitoring" ]; then
+    echo -e "${GREEN}Directory already exists. Skipping clone.${NC}"
+else
+    git clone https://github.com/kamijon/server-monitoring.git
+fi
 
 echo -e "${GREEN}Installing Python dependencies...${NC}"
 cd server-monitoring
 pip3 install -r requirements.txt
 
-# Automatically detect public IP address
-SERVER_IP=$(curl -s ifconfig.me)
-
-echo -e "${GREEN}Detected Server IP: ${SERVER_IP}${NC}"
-
 echo -e "${GREEN}Creating systemd service...${NC}"
-cat > /etc/systemd/system/server-monitoring.service << EOL
+cat > /etc/systemd/system/server-monitoring.service << 'EOL'
 [Unit]
 Description=Server Monitoring FastAPI App
 After=network.target
@@ -32,7 +32,7 @@ After=network.target
 [Service]
 User=root
 WorkingDirectory=/opt/server-monitoring
-ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host $SERVER_IP --port 8000
+ExecStart=/usr/bin/python3 -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 Restart=always
 
 [Install]
@@ -42,7 +42,7 @@ EOL
 echo -e "${GREEN}Reloading systemd and starting service...${NC}"
 systemctl daemon-reload
 systemctl enable server-monitoring
-systemctl start server-monitoring
+systemctl restart server-monitoring
 
-echo -e "${GREEN}Installation complete. Server Monitoring is now running on http://$SERVER_IP:_
+echo -e "${GREEN}Installation complete. Server Monitoring is now running on your server 🚀${NC}"
 
