@@ -22,7 +22,10 @@ git clone https://github.com/kamijon/server-monitoring.git
 
 echo -e "${GREEN}Installing Python dependencies...${NC}"
 cd server-monitoring
-pip3 install -r requirements.txt
+
+# Instead of relying on requirements.txt, install critical packages globally
+pip3 install --upgrade pip
+pip3 install uvicorn fastapi aiohttp sqlalchemy python-multipart jinja2 requests
 
 echo -e "${GREEN}Creating systemd service...${NC}"
 
