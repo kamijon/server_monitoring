@@ -14,17 +14,19 @@ echo -e "${GREEN}Cloning the project from GitHub...${NC}"
 cd /opt
 
 if [ -d "server-monitoring" ]; then
-    echo -e "${GREEN}Directory already exists. Skipping clone.${NC}"
-else
-    git clone https://github.com/kamijon/server-monitoring.git
+    echo -e "${GREEN}Directory already exists. Removing it...${NC}"
+    rm -rf server-monitoring
 fi
+
+git clone https://github.com/kamijon/server-monitoring.git
 
 echo -e "${GREEN}Installing Python dependencies...${NC}"
 cd server-monitoring
 pip3 install -r requirements.txt
 
 echo -e "${GREEN}Creating systemd service...${NC}"
-cat > /etc/systemd/system/server-monitoring.service << 'EOL'
+
+cat <<EOL > /etc/systemd/system/server-monitoring.service
 [Unit]
 Description=Server Monitoring FastAPI App
 After=network.target
@@ -44,5 +46,5 @@ systemctl daemon-reload
 systemctl enable server-monitoring
 systemctl restart server-monitoring
 
-echo -e "${GREEN}Installation complete. Server Monitoring is now running on your server 🚀${NC}"
+echo -e "${GREEN}Installation complete. Server Monitoring is now running on http://your-server-ip:8000 🚀${NC}"
 
