@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# رنگ‌ها
 GREEN='\033[0;32m'
 NC='\033[0m'
 
@@ -9,6 +10,7 @@ apt update && apt upgrade -y
 echo -e "${GREEN}Installing Python3, pip, git, curl...${NC}"
 apt install -y python3 python3-pip git curl
 
+# تشخیص نسخه دقیق پایتون
 PYVER=$(python3 --version | awk '{print $2}' | cut -d. -f1,2)
 echo -e "${GREEN}Detected Python version: $PYVER${NC}"
 
@@ -25,9 +27,9 @@ echo -e "${GREEN}Creating virtual environment...${NC}"
 python3 -m venv venv
 source venv/bin/activate
 
-echo -e "${GREEN}Installing dependencies...${NC}"
+echo -e "${GREEN}Installing Python dependencies...${NC}"
 pip install --upgrade pip
-pip install -r requirements.txt || pip install uvicorn fastapi aiohttp sqlalchemy jinja2 python-multipart requests
+pip install fastapi uvicorn aiohttp sqlalchemy jinja2 requests python-multipart itsdangerous bcrypt
 
 echo -e "${GREEN}Setting up systemd service...${NC}"
 
