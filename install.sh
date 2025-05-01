@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# رنگ‌ها
 GREEN='\033[0;32m'
 NC='\033[0m'
 
@@ -10,7 +9,6 @@ apt update && apt upgrade -y
 echo -e "${GREEN}Installing Python3, pip, git, curl...${NC}"
 apt install -y python3 python3-pip git curl
 
-# تشخیص نسخه دقیق پایتون
 PYVER=$(python3 --version | awk '{print $2}' | cut -d. -f1,2)
 echo -e "${GREEN}Detected Python version: $PYVER${NC}"
 
