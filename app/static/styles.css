@@ -1,0 +1,137 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f6f8;
+    margin: 0;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+.server-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.server-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.server-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.server-name {
+    font-size: 22px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.server-status {
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.status-online {
+    color: green;
+}
+
+.status-offline {
+    color: red;
+}
+
+.button-group {
+    margin-top: 10px;
+}
+
+.button {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.button-start {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.button-start:hover {
+    background-color: #45a049;
+}
+
+.button-stop {
+    background-color: #f44336;
+    color: white;
+}
+
+.button-stop:hover {
+    background-color: #da190b;
+}
+
+.button-delete {
+    background-color: #555;
+    color: white;
+}
+
+.button-delete:hover {
+    background-color: #333;
+}
+
+.form-container {
+    max-width: 500px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+input, select {
+    width: 100%;
+    padding: 12px;
+    margin-top: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+button {
+    width: 100%;
+}
+/* Animation for online and offline status */
+@keyframes blink-online {
+    0% { color: #4CAF50; }
+    50% { color: #81C784; }
+    100% { color: #4CAF50; }
+}
+
+@keyframes blink-offline {
+    0% { color: #f44336; }
+    50% { color: #e57373; }
+    100% { color: #f44336; }
+}
+
+.status-online {
+    animation: blink-online 1s infinite;
+}
+
+.status-offline {
+    animation: blink-offline 1s infinite;
+}
+

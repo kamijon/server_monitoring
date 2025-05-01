@@ -1,40 +1,26 @@
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 import requests
-from app import config
 
-# Send alert to Telegram
-def send_telegram_alert(message):
+TELEGRAM_TOKEN = "7667485819:AAH_LB_fOhac1v47Az1pgH3tfAZw0QSPDrk"
+TELEGRAM_CHAT_ID = "920449061"
+
+def send_telegram_message(message: str):
     try:
-        url = f"https://api.telegram.org/bot{config.TELEGRAM_BOT_TOKEN}/sendMessage"
+        url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
         payload = {
-            "chat_id": config.TELEGRAM_CHAT_ID,
+            "chat_id": TELEGRAM_CHAT_ID,
             "text": message,
-            "parse_mode": "HTML"
+            "parse_mode": "Markdown"
         }
         response = requests.post(url, json=payload)
-        return response.status_code == 200
+        response.raise_for_status()
+        return True
     except Exception as e:
         print(f"Telegram alert error: {e}")
         return False
+from datetime import datetime
 
-# Send alert by Email
-def send_email_alert(subject, body):
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = config.EMAIL_USERNAME
-        msg['To'] = config.EMAIL_RECEIVER
-        msg['Subject'] = subject
-
-        msg.attach(MIMEText(body, 'plain'))
-
-        server = smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT)
-        server.starttls()
-        server.login(config.EMAIL_USERNAME, config.EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Email alert error: {e}")
-        return False
+def write_log(message: str):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    log_line = f"[{timestamp}] {message}\n"
+    with open("server.log", "a") as f:
+        f.write(log_line)

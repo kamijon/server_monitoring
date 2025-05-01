@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sign Up - Server Monitoring</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1 style="text-align:center;">Sign Up</h1>
+
+    <div class="form-container">
+        <form action="/signup" method="post">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit" class="button button-start">Sign Up</button>
+        </form>
+
+        {% if message %}
+            <p style="text-align:center; color: green;">{{ message }}</p>
+        {% endif %}
+        {% if error %}
+            <p style="text-align:center; color: red;">{{ error }}</p>
+        {% endif %}
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="/login" class="button button-delete">Back to Login</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Server Monitoring Dashboard</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <meta http-equiv="refresh" content="30">
+    <script src="https://unpkg.com/lucide@latest"></script>
+<style>
+.nav-icons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin: 10px 20px;
+}
+
+.nav-icon {
+    color: #333;
+    text-decoration: none;
+    position: relative;
+    transition: 0.3s;
+}
+
+.nav-icon:hover {
+    color: #007bff;
+}
+
+.nav-icon::after {
+    content: attr(data-title);
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: black;
+    color: white;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: 0.2s;
+}
+
+.nav-icon:hover::after {
+    opacity: 1;
+}
+</style>
+
+</head>
+<body>
+    <div class="nav-icons">
+    <a href="/" class="nav-icon" data-title="Dashboard"><i data-lucide="layout-dashboard"></i></a>
+    <a href="/manage" class="nav-icon" data-title="Manage Servers"><i data-lucide="settings"></i></a>
+    <a href="/logs/server/1" class="nav-icon" data-title="Logs"><i data-lucide="file-text"></i></a>
+    <a href="/charts/server/1" class="nav-icon" data-title="Chart"><i data-lucide="activity"></i></a>
+    <form action="/logout" method="get" style="display: inline;">
+        <button type="submit" class="nav-icon" data-title="Logout" style="background:none; border:none; cursor:pointer;">
+            <i data-lucide="log-out"></i>
+        </button>
+    </form>
+</div>
+
+    <h1>Server Monitoring Dashboard</h1>
+
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="/manage" class="button button-start">Add New Server</a>
+    </div>
+
+    <div style="text-align:center; margin-bottom: 30px;">
+        <div style="display:inline-block; background:#f0f0f0; padding: 20px; border-radius: 12px;">
+            <p><strong>Total:</strong> {{ total }} &nbsp; | &nbsp;
+            <strong>Online:</strong> <span style="color:green">{{ online }}</span> &nbsp; | &nbsp;
+            <strong>Offline:</strong> <span style="color:red">{{ offline }}</span> &nbsp; | &nbsp;
+            <strong>Uptime:</strong> {{ uptime }}%</p>
+        </div>
+    </div>
+
+    <div class="server-list" id="server-list">
+        {% for server in servers %}
+        <div class="server-card">
+            <div class="server-name">
+                {{ server.name }}
+                <span style="font-size: 14px; color: gray;">(ID: {{ server.id }})</span>
+            </div>
+            <div class="server-status">
+                {% if server.status == "Online" %}
+                    <span class="status-online">Online</span>
+                {% else %}
+                    <span class="status-offline">Offline</span>
+                {% endif %}
+            </div>
+
+<canvas id="chart-{{ server.id }}" width="200" height="80"></canvas>
+
+            <div class="button-group">
+                {% if server.monitoring %}
+                    <form action="/stop/{{ server.id }}" method="post" style="display:inline;">
+                        <button type="submit" class="button button-stop">Stop Monitoring</button>
+                    </form>
+                {% else %}
+                    <form action="/start/{{ server.id }}" method="post" style="display:inline;">
+                        <button type="submit" class="button button-start">Start Monitoring</button>
+                    </form>
+                {% endif %}
+                <form action="/delete/{{ server.id }}" method="post" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this server?');">
+                    <button type="submit" class="button button-delete">Delete</button>
+                </form>
+                <a href="/edit/{{ server.id }}" class="button button-start">Edit</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+{% for server in servers %}
+let chart_{{ server.id }};
+function loadChart_{{ server.id }}() {
+    fetch("/api/chart-data/{{ server.id }}")
+        .then(response => response.json())
+        .then(data => {
+            const ctx = document.getElementById("chart-{{ server.id }}").getContext("2d");
+
+            if (!chart_{{ server.id }}) {
+                chart_{{ server.id }} = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            data: data.statuses,
+                            borderColor: data.statuses.slice(-1)[0] === 1 ? 'green' : 'red',
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            fill: true,
+                            tension: 0.2,
+                            pointRadius: 0,
+                            borderWidth: 1.5
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { display: false, min: 0, max: 1 },
+                            x: { display: false }
+                        },
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+            } else {
+                chart_{{ server.id }}.data.labels = data.labels;
+                chart_{{ server.id }}.data.datasets[0].data = data.statuses;
+                chart_{{ server.id }}.update();
+            }
+        });
+}
+
+loadChart_{{ server.id }}();
+setInterval(loadChart_{{ server.id }}, 30000);
+{% endfor %}
+</script>
+
+<script>
+  lucide.createIcons();
+</script>
+
+
+</body>
+</html>

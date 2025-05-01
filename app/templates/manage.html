@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add New Server</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div style="text-align: right; margin: 10px 20px;">
+    <form action="/logout" method="get" style="display:inline;">
+        <button class="button button-delete">Logout</button>
+    </form>
+</div>
+
+    <h1>Add New Server</h1>
+
+    <div class="form-container">
+        <form action="/add_server" method="post">
+    <input type="text" name="name" placeholder="Server Name" required>
+    <input type="text" name="address" placeholder="Server Address or URL" required>
+    <input type="number" name="port" placeholder="Port (optional)">
+    <select name="check_type" required>
+        <option value="ping">Ping</option>
+        <option value="port">Port</option>
+        <option value="http">HTTP</option>
+        <option value="http-keyword">HTTP with Keyword</option>
+    </select>
+    <input type="text" name="keyword" placeholder="Keyword (only for HTTP-Keyword)">
+    <button type="submit" class="button button-start">Add Server</button>
+        </form>
+
+
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+        <a href="/" class="button button-delete">Back to Dashboard</a>
+    </div>
+</body>
+</html>

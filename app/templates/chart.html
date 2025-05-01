@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Status Chart - {{ server.name }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <h1 style="text-align:center;">Status Chart - {{ server.name }}</h1>
+
+    <div style="max-width: 800px; margin: auto;">
+        <canvas id="statusChart"></canvas>
+    </div>
+
+    <div style="text-align:center; margin-top:20px;">
+        <a href="/" class="button button-start">Back to Dashboard</a>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        const statusChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: {{ labels | safe }},
+                datasets: [{
+                    label: 'Server Status (1=Online, 0=Offline)',
+                    data: {{ statuses | safe }},
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: {{ "'green'" if statuses[-1] == 1 else "'red'" }},
+                    borderWidth: 2,
+                    tension: 0.2,
+                    fill: true,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return value === 1 ? 'Online' : 'Offline';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
