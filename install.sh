@@ -27,7 +27,7 @@ source venv/bin/activate
 
 echo -e "${GREEN}Installing Python dependencies...${NC}"
 pip install --upgrade pip
-pip install fastapi uvicorn aiohttp sqlalchemy jinja2 requests python-multipart itsdangerous bcrypt
+pip install fastapi uvicorn aiohttp sqlalchemy jinja2 requests python-multipart itsdangerous bcrypt beautifulsoup4
 
 echo -e "${GREEN}Creating server-monitoring.service...${NC}"
 cat <<EOF > /etc/systemd/system/server-monitoring.service
