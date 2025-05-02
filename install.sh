@@ -29,8 +29,7 @@ echo -e "${GREEN}Installing Python dependencies...${NC}"
 pip install --upgrade pip
 pip install fastapi uvicorn aiohttp sqlalchemy jinja2 requests python-multipart itsdangerous bcrypt
 
-echo -e "${GREEN}Setting up systemd service...${NC}"
-
+echo -e "${GREEN}Creating server-monitoring.service...${NC}"
 cat <<EOF > /etc/systemd/system/server-monitoring.service
 [Unit]
 Description=Server Monitoring FastAPI App
@@ -46,10 +45,35 @@ Restart=always
 WantedBy=multi-user.target
 EOF
 
-echo -e "${GREEN}Enabling and starting service...${NC}"
+echo -e "${GREEN}Creating sync-ips.service and timer...${NC}"
+cat <<EOF > /etc/systemd/system/sync-ips.service
+[Unit]
+Description=Sync server IPs from xwork.app
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/server-monitoring
+ExecStart=/opt/server-monitoring/venv/bin/python3 /opt/server-monitoring/sync_ips.py
+EOF
+
+cat <<EOF > /etc/systemd/system/sync-ips.timer
+[Unit]
+Description=Run sync-ips.service every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+
+echo -e "${GREEN}Reloading systemd and enabling services...${NC}"
+systemctl daemon-reexec
 systemctl daemon-reload
-systemctl enable server-monitoring
-systemctl restart server-monitoring
+systemctl enable --now server-monitoring
+systemctl enable --now sync-ips.timer
 
 echo -e "${GREEN}✅ Installation completed!${NC}"
 echo -e "${GREEN}Visit your server at: http://<your-server-ip>:8000${NC}"
