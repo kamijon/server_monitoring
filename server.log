@@ -7124,3 +7124,302 @@ Address: 89.1.216.234:noport
 [2025-05-05 10:04:00] ✅ Server ps9281 (108.181.132.217) is ONLINE
 [2025-05-05 10:04:00] ✅ Server ps12590 (108.181.122.179) is ONLINE
 [2025-05-05 10:04:01] ✅ Server ps10224 (108.181.56.241) is ONLINE
+[2025-05-05 12:00:35] 🚨 Server vs4 (194.42.205.100) is OFFLINE!
+[2025-05-05 13:57:24] Error during sync: (sqlite3.OperationalError) no such column: servers.is_manual
+[SQL: SELECT servers.id AS servers_id, servers.name AS servers_name, servers.address AS servers_address, servers.port AS servers_port, servers.status AS servers_status, servers.check_type AS servers_check_type, servers.keyword AS servers_keyword, servers.monitoring AS servers_monitoring, servers.category_id AS servers_category_id, servers.is_manual AS servers_is_manual 
+FROM servers]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2025-05-05 13:57:31] Error during sync: (sqlite3.OperationalError) no such column: servers.is_manual
+[SQL: SELECT servers.id AS servers_id, servers.name AS servers_name, servers.address AS servers_address, servers.port AS servers_port, servers.status AS servers_status, servers.check_type AS servers_check_type, servers.keyword AS servers_keyword, servers.monitoring AS servers_monitoring, servers.category_id AS servers_category_id, servers.is_manual AS servers_is_manual 
+FROM servers]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2025-05-05 13:57:47] Error during sync: (sqlite3.OperationalError) no such column: servers.is_manual
+[SQL: SELECT servers.id AS servers_id, servers.name AS servers_name, servers.address AS servers_address, servers.port AS servers_port, servers.status AS servers_status, servers.check_type AS servers_check_type, servers.keyword AS servers_keyword, servers.monitoring AS servers_monitoring, servers.category_id AS servers_category_id, servers.is_manual AS servers_is_manual 
+FROM servers]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2025-05-05 13:58:35] Error during sync: (sqlite3.OperationalError) no such column: servers.is_manual
+[SQL: SELECT servers.id AS servers_id, servers.name AS servers_name, servers.address AS servers_address, servers.port AS servers_port, servers.status AS servers_status, servers.check_type AS servers_check_type, servers.keyword AS servers_keyword, servers.monitoring AS servers_monitoring, servers.category_id AS servers_category_id, servers.is_manual AS servers_is_manual 
+FROM servers]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2025-05-05 13:59:19] Error during sync: (sqlite3.OperationalError) no such column: servers.is_manual
+[SQL: SELECT servers.id AS servers_id, servers.name AS servers_name, servers.address AS servers_address, servers.port AS servers_port, servers.status AS servers_status, servers.check_type AS servers_check_type, servers.keyword AS servers_keyword, servers.monitoring AS servers_monitoring, servers.category_id AS servers_category_id, servers.is_manual AS servers_is_manual 
+FROM servers]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2025-05-05 13:59:21] Error during sync: (sqlite3.OperationalError) no such column: servers.is_manual
+[SQL: SELECT servers.id AS servers_id, servers.name AS servers_name, servers.address AS servers_address, servers.port AS servers_port, servers.status AS servers_status, servers.check_type AS servers_check_type, servers.keyword AS servers_keyword, servers.monitoring AS servers_monitoring, servers.category_id AS servers_category_id, servers.is_manual AS servers_is_manual 
+FROM servers]
+(Background on this error at: https://sqlalche.me/e/20/e3q8)
+[2025-05-05 14:04:21] ➕ New server added:
+Name: main
+Type: main
+Address: 168.119.147.120:8080
+[2025-05-05 14:04:21] ➕ New server added:
+Name: ve0
+Type: lb
+Address: 31.42.184.158:8070
+[2025-05-05 14:04:22] ➕ New server added:
+Name: vs0
+Type: lb
+Address: 128.0.104.44:8070
+[2025-05-05 14:04:22] ➕ New server added:
+Name: vs1
+Type: lb
+Address: 128.0.104.39:8070
+[2025-05-05 14:04:22] ➕ New server added:
+Name: vs2
+Type: lb
+Address: 194.42.205.101:8070
+[2025-05-05 14:04:22] ➕ New server added:
+Name: vs3
+Type: lb
+Address: 194.42.205.99:8070
+[2025-05-05 14:04:23] ➕ New server added:
+Name: vs4
+Type: lb
+Address: 194.42.205.100:8070
+[2025-05-05 14:04:23] ➕ New server added:
+Name: ps14668
+Type: lb
+Address: 108.181.132.205:8070
+[2025-05-05 14:04:23] ➕ New server added:
+Name: ps9281
+Type: lb
+Address: 108.181.132.217:8070
+[2025-05-05 14:04:23] ➕ New server added:
+Name: ps12600
+Type: lb
+Address: 108.181.123.111:8070
+[2025-05-05 14:04:24] ➕ New server added:
+Name: ps12592
+Type: lb
+Address: 108.181.123.99:8070
+[2025-05-05 14:04:24] ➕ New server added:
+Name: ps11840
+Type: lb
+Address: 108.181.122.99:8070
+[2025-05-05 14:04:24] ➕ New server added:
+Name: ps9288
+Type: lb
+Address: 108.181.56.69:8070
+[2025-05-05 14:04:24] ➕ New server added:
+Name: ps12590
+Type: lb
+Address: 108.181.122.179:8070
+[2025-05-05 14:04:24] ➕ New server added:
+Name: ps10224
+Type: lb
+Address: 108.181.56.241:8070
+[2025-05-05 14:04:25] ➕ New server added:
+Name: ev0
+Type: lb
+Address: 213.176.3.236:8080
+[2025-05-05 14:04:25] ➕ New server added:
+Name: ev1
+Type: lb
+Address: 45.194.86.111:8070
+[2025-05-05 14:04:25] ➕ New server added:
+Name: ev2
+Type: lb
+Address: 93.113.203.175:8070
+[2025-05-05 14:04:25] ➕ New server added:
+Name: ev3
+Type: lb
+Address: 45.194.86.62:8070
+[2025-05-05 14:04:26] ➕ New server added:
+Name: ev4
+Type: lb
+Address: 213.176.3.220:8070
+[2025-05-05 14:04:26] ➕ New server added:
+Name: ev5
+Type: lb
+Address: 45.194.86.61:8070
+[2025-05-05 14:04:26] ➕ New server added:
+Name: pr-sj0
+Type: proxy
+Address: 101.99.93.171:8080
+[2025-05-05 14:04:26] ➕ New server added:
+Name: pr-uh0
+Type: proxy
+Address: 103.229.81.103:8080
+[2025-05-05 14:04:26] ➕ New server added:
+Name: pr-vy0
+Type: proxy
+Address: 45.12.2.240:8080
+[2025-05-05 14:04:27] ➕ New server added:
+Name: pr-ad0
+Type: proxy
+Address: 193.27.90.139:8080
+[2025-05-05 14:04:27] ➕ New server added:
+Name: pr-ad1
+Type: proxy
+Address: 93.157.106.128:8080
+[2025-05-05 14:04:27] ➕ New server added:
+Name: pr-av0
+Type: proxy
+Address: 217.156.66.36:8080
+[2025-05-05 14:04:27] ➕ New server added:
+Name: relay:de
+Type: relay
+Address: 176.9.99.246:1960
+[2025-05-05 14:04:28] ➕ New server added:
+Name: relay:uk
+Type: relay
+Address: 77.68.122.192:1960
+[2025-05-05 14:04:28] ➕ New server added:
+Name: codec:de
+Type: codec
+Address: 176.9.99.246:3913
+[2025-05-05 14:04:28] ➕ New server added:
+Name: codec:uk
+Type: codec
+Address: 77.68.122.192:3913
+[2025-05-05 14:04:28] ➕ New server added:
+Name: lfns
+Type: etc
+Address: 188.34.204.101:4318
+[2025-05-05 14:04:28] ➕ New server added:
+Name: ftp
+Type: etc
+Address: 94.176.238.155:3028
+[2025-05-05 14:04:29] ➕ New server added:
+Name: xwork
+Type: etc
+Address: 128.140.85.203:80
+[2025-05-05 14:04:29] ➕ New server added:
+Name: port
+Type: etc
+Address: 159.69.181.44:1940
+[2025-05-05 14:04:29] ➕ New server added:
+Name: kron
+Type: etc
+Address: 188.34.204.101:4048
+[2025-05-05 14:04:29] ➕ New server added:
+Name: s3
+Type: etc
+Address: 178.63.101.214:2052
+[2025-05-05 14:04:30] ➕ New server added:
+Name: mini
+Type: etc
+Address: 178.63.101.214:9027
+[2025-05-05 14:04:30] ➕ New server added:
+Name: proxyget
+Type: etc
+Address: 45.77.77.239:1323
+[2025-05-05 14:04:30] ➕ New server added:
+Name: lfn#0
+Type: lfn
+Address: 88.198.67.242:4310
+[2025-05-05 14:04:30] ➕ New server added:
+Name: lfn#1
+Type: lfn
+Address: 176.9.1.29:4310
+[2025-05-05 14:04:30] ➕ New server added:
+Name: lfn#2
+Type: lfn
+Address: 95.217.88.101:4310
+[2025-05-05 14:04:31] ➕ New server added:
+Name: i3ns:de
+Type: ns
+Address: 46.4.59.183:8053
+[2025-05-05 14:04:31] ➕ New server added:
+Name: i3ns:us
+Type: ns
+Address: 45.77.77.239:8053
+[2025-05-05 14:04:31] ➕ New server added:
+Name: i3ns:fr
+Type: ns
+Address: 51.68.199.18:8053
+[2025-05-05 14:04:31] ➕ New server added:
+Name: mailfwd
+Type: mail
+Address: 46.4.59.183:25
+[2025-05-05 14:04:31] ➕ New server added:
+Name: bremen
+Type: web
+Address: 65.108.51.240:80
+[2025-05-05 14:04:32] ➕ New server added:
+Name: cs
+Type: web
+Address: 91.99.9.159:80
+[2025-05-05 14:04:32] ➕ New server added:
+Name: congo
+Type: web
+Address: 185.255.120.41:80
+[2025-05-05 14:04:32] ➕ New server added:
+Name: anzio
+Type: web
+Address: 185.255.120.49:80
+[2025-05-05 14:04:32] ➕ New server added:
+Name: prague
+Type: web
+Address: 207.154.211.254:80
+[2025-05-05 14:04:32] ➕ New server added:
+Name: vodn0
+Type: vodn
+Address: 31.42.184.158:8095
+[2025-05-05 14:04:33] ➕ New server added:
+Name: vods0
+Type: vods
+Address: 176.9.99.246:8093
+[2025-05-05 14:04:33] ➕ New server added:
+Name: vods1
+Type: vods
+Address: 46.4.59.183:8093
+[2025-05-05 14:04:33] ➕ New server added:
+Name: vods2
+Type: vods
+Address: 178.63.101.214:8093
+[2025-05-05 14:04:33] ➕ New server added:
+Name: vods3
+Type: vods
+Address: 78.46.102.142:8093
+[2025-05-05 14:04:34] ➕ New server added:
+Name: v-32a
+Type: vnc
+Address: 144.76.185.102:80
+[2025-05-05 14:04:34] ➕ New server added:
+Name: v-32b
+Type: vnc
+Address: 95.216.13.79:80
+[2025-05-05 14:04:34] ➕ New server added:
+Name: v-32c
+Type: vnc
+Address: 95.216.19.156:80
+[2025-05-05 14:04:34] ➕ New server added:
+Name: v-32f
+Type: vnc
+Address: 176.9.77.83:80
+[2025-05-05 14:04:34] ➕ New server added:
+Name: guyvalid1
+Type: guy_valid
+Address: 168.119.255.164:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid2
+Type: guy_valid
+Address: 206.206.125.210:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid3
+Type: guy_valid
+Address: 142.132.179.167:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid4
+Type: guy_valid
+Address: 87.106.205.57:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid5
+Type: guy_valid
+Address: 195.201.140.99:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid6
+Type: guy_valid
+Address: 212.227.189.172:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid7
+Type: guy_valid
+Address: 49.13.49.225:noport
+[2025-05-05 14:04:35] ➕ New server added:
+Name: guyvalid8
+Type: guy_valid
+Address: 89.1.216.234:noport
+[2025-05-05 14:05:38] 🚨 Server IPTVTREE (https://iptvtree.com) is OFFLINE!
+[2025-05-05 14:05:52] ✅ Server IPTVTREE (https://iptvtree.com) is ONLINE

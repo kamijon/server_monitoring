@@ -31,6 +31,7 @@ class Server(Base):
     keyword = Column(String, nullable=True)
     monitoring = Column(Boolean, default=True)
     category_id = Column(Integer, ForeignKey("categories.id"))
+    is_manual = Column(Boolean, default=False)  # Flag to mark manually added servers
     category = relationship("Category", back_populates="servers")
 
 

@@ -25,7 +25,12 @@ def fetch_remote_servers():
             raise Exception("Login failed!")
 
         print("Login successful, fetching server list...")
-        response = session.get(IP_LIST_URL, timeout=10)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'application/json',
+            'Cookie': response.headers.get('Set-Cookie', '')
+        }
+        response = session.get(IP_LIST_URL, headers=headers, timeout=10)
         if response.status_code != 200:
             print(f"Failed to fetch server list with status code: {response.status_code}")
             print(f"Response: {response.text}")
@@ -105,9 +110,9 @@ def sync_ips():
         for remote_server in remote_servers:
             server_key = f"{remote_server['address']}:{remote_server['port'] if remote_server['port'] else 'noport'}"
             if server_key in current_servers_dict:
-                # Update existing server
+                # Update existing server only if it's not manually added
                 server = current_servers_dict[server_key]
-                if server.name != remote_server['name'] or server.category_id != categories[remote_server['type']].id:
+                if not server.is_manual and (server.name != remote_server['name'] or server.category_id != categories[remote_server['type']].id):
                     old_name = server.name
                     server.name = remote_server['name']
                     server.category_id = categories[remote_server['type']].id
@@ -127,7 +132,8 @@ def sync_ips():
                     status="Unknown",
                     check_type="port" if remote_server['port'] else "ping",
                     monitoring=True,
-                    category_id=categories[remote_server['type']].id
+                    category_id=categories[remote_server['type']].id,
+                    is_manual=False  # Mark as auto-added
                 )
                 db.add(new_server)
                 log_msg = f"➕ New server added:\n"
@@ -138,10 +144,10 @@ def sync_ips():
                 changes_detected = True
                 print(f"Added new server: {new_server.name}")
 
-        # Remove servers that are no longer in the remote list
+        # Remove servers that are no longer in the remote list, but only if they're not manually added
         remote_server_keys = {f"{server['address']}:{server['port'] if server['port'] else 'noport'}" for server in remote_servers}
         for server_key, server in current_servers_dict.items():
-            if server_key not in remote_server_keys:
+            if server_key not in remote_server_keys and not server.is_manual:
                 log_msg = f"❌ Server removed:\n"
                 log_msg += f"Name: {server.name}\n"
                 log_msg += f"Type: {server.category.name}\n"

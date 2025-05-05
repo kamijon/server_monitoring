@@ -263,7 +263,8 @@ async def add_server(
         check_type=check_type,
         keyword=keyword,
         monitoring=True,
-        category_id=category_id
+        category_id=category_id,
+        is_manual=True  # Mark as manually added
     )
     db.add(server)
     db.commit()
