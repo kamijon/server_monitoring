@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Category - Server Monitoring</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="nav-icons">
+        <a href="/" class="nav-icon" data-title="Dashboard"><i data-lucide="layout-dashboard"></i></a>
+        <a href="/manage" class="nav-icon" data-title="Manage Servers"><i data-lucide="settings"></i></a>
+        <a href="/categories" class="nav-icon" data-title="Categories"><i data-lucide="folder"></i></a>
+        <form action="/logout" method="get" style="display: inline;">
+            <button type="submit" class="nav-icon" data-title="Logout" style="background:none; border:none; cursor:pointer;">
+                <i data-lucide="log-out"></i>
+            </button>
+        </form>
+    </div>
+
+    <h1>New Category</h1>
+
+    <div class="form-container">
+        <form action="/categories" method="post">
+            <input type="text" name="name" placeholder="Category Name" required>
+            <textarea name="description" placeholder="Category Description" required></textarea>
+            <button type="submit" class="button button-start">Create Category</button>
+        </form>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html> 

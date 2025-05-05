@@ -1,16 +1,19 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from starlette.middleware.sessions import SessionMiddleware
-from app.database import UptimeLog
+from app.database import UptimeLog, Category
 from fastapi.responses import JSONResponse
+import asyncio
+from sync_ips import sync_ips
 
-from app.notifier import send_telegram_message
+from app.notifier import send_telegram_message, write_log
 from app.database import SessionLocal, Server, User
 from app.monitor import monitor_servers
 import bcrypt
+from datetime import datetime
 
 app = FastAPI()
 
@@ -20,9 +23,21 @@ app.add_middleware(SessionMiddleware, secret_key="kamran-monitoring-2025")
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
+async def sync_servers_task():
+    while True:
+        try:
+            sync_ips()
+        except Exception as e:
+            print(f"Error syncing servers: {e}")
+        await asyncio.sleep(300)  # 5 minutes
+
 @app.on_event("startup")
 async def startup_event():
     monitor_servers()
+    asyncio.create_task(sync_servers_task())
+    # Initialize database with default categories
+    from app.database import init_db
+    init_db()
 
 #  login
 @app.get("/login", response_class=HTMLResponse)
@@ -35,19 +50,25 @@ async def login(request: Request, username: str = Form(...), password: str = For
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
     db.close()
-    if user and bcrypt.checkpw(password.encode(), user.password_hash.encode()):
-        request.session["user"] = username
-        send_telegram_message(f"✅ {username} logged in!")
-        return RedirectResponse(url="/", status_code=302)
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
+    
+    if user and user.verify_password(password):
+        request.session["user"] = user.username
+        request.session["user_id"] = user.id
+        write_log(f"User {user.username} logged in")
+        send_telegram_message(f"*🔐 User {user.username} logged in*")
+        return RedirectResponse(url="/", status_code=303)
+    else:
+        return RedirectResponse(url="/?error=invalid", status_code=303)
 
 # logout
 @app.get("/logout")
 async def logout(request: Request):
     if "user" in request.session:
-        send_telegram_message(f"🚪 {request.session['user']} logged out.")
-    request.session.clear()
-    return RedirectResponse(url="/login", status_code=302)
+        username = request.session["user"]
+        write_log(f"User {username} logged out")
+        send_telegram_message(f"*🔓 User {username} logged out*")
+        request.session.clear()
+    return RedirectResponse(url="/login", status_code=303)
 
 
 @app.get("/signup", response_class=HTMLResponse)
@@ -65,7 +86,7 @@ async def signup_form(request: Request):
     return templates.TemplateResponse("signup.html", {"request": request, "message": None, "error": None})
 
 @app.post("/signup")
-async def signup(request: Request, username: str = Form(...), password: str = Form(...)):
+async def signup(request: Request, username: str = Form(...), password: str = Form(...), confirm_password: str = Form(...)):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
 
@@ -76,17 +97,48 @@ async def signup(request: Request, username: str = Form(...), password: str = Fo
         db.close()
         return RedirectResponse(url="/", status_code=302)
 
+    # Validate password confirmation
+    if password != confirm_password:
+        db.close()
+        return templates.TemplateResponse("signup.html", {
+            "request": request,
+            "message": None,
+            "error": "Passwords do not match."
+        })
+
+    # Validate password strength
+    if len(password) < 8:
+        db.close()
+        return templates.TemplateResponse("signup.html", {
+            "request": request,
+            "message": None,
+            "error": "Password must be at least 8 characters long."
+        })
+
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         db.close()
-        return templates.TemplateResponse("signup.html", {"request": request, "message": None, "error": "Username already exists."})
+        return templates.TemplateResponse("signup.html", {
+            "request": request,
+            "message": None,
+            "error": "Username already exists."
+        })
 
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     new_user = User(username=username, password_hash=hashed_password, is_admin=False)
     db.add(new_user)
     db.commit()
     db.close()
-    return templates.TemplateResponse("signup.html", {"request": request, "message": "User created successfully!", "error": None})
+
+    # Log the user creation
+    write_log(f"New user created by admin {current_user.username}: {username}")
+    send_telegram_message(f"*👤 New User Created*\nCreated by: {current_user.username}\nUsername: {username}")
+
+    return templates.TemplateResponse("signup.html", {
+        "request": request,
+        "message": "User created successfully!",
+        "error": None
+    })
 
 @app.get("/users", response_class=HTMLResponse)
 async def list_users(request: Request):
@@ -148,42 +200,60 @@ async def change_password(request: Request, old_password: str = Form(...), new_p
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    db = SessionLocal()
-    servers = db.query(Server).all()
-
-    total = len(servers)
-    online = sum(1 for s in servers if s.status == "Online")
-    offline = sum(1 for s in servers if s.status == "Offline")
-    uptime = int((online / total) * 100) if total > 0 else 0
-
-    db.close()
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "servers": servers,
-        "total": total,
-        "online": online,
-        "offline": offline,
-        "uptime": uptime
-    })
-
-
-@app.get("/manage", response_class=HTMLResponse)
-async def manage(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
     db = SessionLocal()
-    servers = db.query(Server).all()
+    categories = db.query(Category).all()
+    servers_by_category = {}
+    for category in categories:
+        servers = db.query(Server).filter(Server.category_id == category.id).all()
+        servers_by_category[category] = servers
+
+    total = sum(len(servers) for servers in servers_by_category.values())
+    online = sum(1 for servers in servers_by_category.values() for s in servers if s.status == "Online")
+    offline = sum(1 for servers in servers_by_category.values() for s in servers if s.status == "Offline")
+    uptime = int((online / total) * 100) if total > 0 else 0
+
+    # Get current user
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     db.close()
-    return templates.TemplateResponse("manage.html", {"request": request, "servers": servers})
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request": request,
+        "servers_by_category": servers_by_category,
+        "total": total,
+        "online": online,
+        "offline": offline,
+        "uptime": uptime,
+        "user": current_user
+    })
+
+
+@app.get("/add_server", response_class=HTMLResponse)
+async def add_server_form(request: Request):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    db = SessionLocal()
+    categories = db.query(Category).all()
+    db.close()
+    return templates.TemplateResponse("add_server.html", {
+        "request": request,
+        "categories": categories
+    })
 
 @app.post("/add_server")
 async def add_server(
+    request: Request,
     name: str = Form(...),
     address: str = Form(...),
     port: int = Form(0),
     check_type: str = Form(...),
-    keyword: str = Form(None)
+    keyword: str = Form(None),
+    category_id: int = Form(...)
 ):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    
     db = SessionLocal()
     server = Server(
         name=name,
@@ -192,13 +262,13 @@ async def add_server(
         status="Unknown",
         check_type=check_type,
         keyword=keyword,
-        monitoring=True
+        monitoring=True,
+        category_id=category_id
     )
     db.add(server)
     db.commit()
     db.close()
     return RedirectResponse(url="/", status_code=303)
-
 
 @app.post("/delete/{server_id}")
 async def delete_server(server_id: int):
@@ -217,6 +287,10 @@ async def start_monitoring(server_id: int):
     if server:
         server.monitoring = True
         db.commit()
+        message = f"*▶️ Server Monitoring Started*\n"
+        message += f"Server: {server.name}\n"
+        message += f"Address: {server.address}:{server.port}"
+        send_telegram_message(message)
     db.close()
     return RedirectResponse(url="/", status_code=303)
 
@@ -227,6 +301,10 @@ async def stop_monitoring(server_id: int):
     if server:
         server.monitoring = False
         db.commit()
+        message = f"*⏹️ Server Monitoring Stopped*\n"
+        message += f"Server: {server.name}\n"
+        message += f"Address: {server.address}:{server.port}"
+        send_telegram_message(message)
     db.close()
     return RedirectResponse(url="/", status_code=303)
 
@@ -254,14 +332,17 @@ async def view_logs(request: Request):
 async def edit_server(request: Request, server_id: int):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
-    
     db = SessionLocal()
     server = db.query(Server).filter(Server.id == server_id).first()
+    categories = db.query(Category).all()
     db.close()
     if not server:
         return RedirectResponse(url="/", status_code=302)
-
-    return templates.TemplateResponse("edit_server.html", {"request": request, "server": server})
+    return templates.TemplateResponse("edit_server.html", {
+        "request": request,
+        "server": server,
+        "categories": categories
+    })
 
 @app.post("/update_server/{server_id}")
 async def update_server(
@@ -270,7 +351,8 @@ async def update_server(
     address: str = Form(...),
     port: int = Form(0),
     check_type: str = Form(...),
-    keyword: str = Form(None)
+    keyword: str = Form(None),
+    category_id: int = Form(...)
 ):
     db = SessionLocal()
     server = db.query(Server).filter(Server.id == server_id).first()
@@ -280,6 +362,7 @@ async def update_server(
         server.port = port if port > 0 else None
         server.check_type = check_type
         server.keyword = keyword
+        server.category_id = category_id
         db.commit()
     db.close()
     return RedirectResponse(url="/", status_code=303)
@@ -329,4 +412,104 @@ async def chart_data(server_id: int):
     statuses = [1 if log.status == "Online" else 0 for log in logs][-20:]
 
     return JSONResponse(content={"labels": labels, "statuses": statuses})
+
+@app.get("/sync")
+async def sync_servers(request: Request):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    try:
+        changes = sync_ips()
+        if changes:
+            return JSONResponse(content={"status": "success", "changes": changes})
+        else:
+            return JSONResponse(content={"status": "success", "message": "No changes detected"})
+    except Exception as e:
+        return JSONResponse(content={"status": "error", "message": str(e)}, status_code=500)
+
+# Category management routes
+@app.get("/categories", response_class=HTMLResponse)
+async def list_categories(request: Request):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    db = SessionLocal()
+    categories = db.query(Category).all()
+    db.close()
+    
+    return templates.TemplateResponse("categories.html", {
+        "request": request,
+        "categories": categories
+    })
+
+@app.get("/categories/new", response_class=HTMLResponse)
+async def new_category_form(request: Request):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    return templates.TemplateResponse("new_category.html", {"request": request})
+
+@app.post("/categories")
+async def create_category(request: Request, name: str = Form(...), description: str = Form(...)):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    db = SessionLocal()
+    category = Category(name=name, description=description)
+    db.add(category)
+    db.commit()
+    db.close()
+    
+    return RedirectResponse(url="/categories", status_code=302)
+
+@app.post("/delete_category/{category_id}")
+async def delete_category(request: Request, category_id: int):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+    
+    db = SessionLocal()
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if category:
+        db.delete(category)
+        db.commit()
+    db.close()
+    
+    return RedirectResponse(url="/categories", status_code=302)
+
+async def check_server_status(server: Server):
+    try:
+        if server.check_type == "ping":
+            response = await ping_server(server.address)
+            new_status = "Online" if response else "Offline"
+        elif server.check_type == "port":
+            response = await check_port(server.address, server.port)
+            new_status = "Online" if response else "Offline"
+        elif server.check_type == "http":
+            response = await check_http(server.address, server.port)
+            new_status = "Online" if response else "Offline"
+        elif server.check_type == "http_keyword":
+            response = await check_http_keyword(server.address, server.port, server.keyword)
+            new_status = "Online" if response else "Offline"
+        else:
+            new_status = "Unknown"
+
+        # Only send notification if status has changed
+        if server.status != new_status:
+            old_status = server.status
+            server.status = new_status
+            server.last_check = datetime.now()
+            
+            # Send Telegram notification for status change
+            if old_status != "Unknown":  # Don't notify for initial status
+                status_emoji = "🟢" if new_status == "Online" else "🔴"
+                message = f"*{status_emoji} Server Status Change*\n"
+                message += f"Server: {server.name}\n"
+                message += f"Address: {server.address}:{server.port}\n"
+                message += f"Status: {old_status} → {new_status}"
+                send_telegram_message(message)
+            
+            return True  # Status changed
+        return False  # Status unchanged
+
+    except Exception as e:
+        print(f"Error checking server {server.name}: {str(e)}")
+        return False
 

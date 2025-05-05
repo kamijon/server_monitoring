@@ -2,30 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Server</title>
-    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-    <h1 style="text-align:center;">Edit Server</h1>
+<body class="bg-gray-100">
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <span class="text-xl font-bold">Server Monitoring</span>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-    <div class="form-container">
-        <form action="/update_server/{{ server.id }}" method="post">
-            <input type="text" name="name" value="{{ server.name }}" required>
-            <input type="text" name="address" value="{{ server.address }}" required>
-            <input type="number" name="port" value="{{ server.port or '' }}" placeholder="Port (optional)">
-            <select name="check_type" required>
-                <option value="ping" {% if server.check_type == 'ping' %}selected{% endif %}>Ping</option>
-                <option value="port" {% if server.check_type == 'port' %}selected{% endif %}>Port</option>
-                <option value="http" {% if server.check_type == 'http' %}selected{% endif %}>HTTP</option>
-                <option value="http-keyword" {% if server.check_type == 'http-keyword' %}selected{% endif %}>HTTP with Keyword</option>
-            </select>
-            <input type="text" name="keyword" value="{{ server.keyword or '' }}" placeholder="Keyword (for HTTP-Keyword)">
-            <button type="submit" class="button button-start">Update Server</button>
-        </form>
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-4 py-5 sm:px-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Server</h3>
+            </div>
+            <div class="border-t border-gray-200 px-4 py-5 sm:px-6">
+                <form action="/update_server/{{ server.id }}" method="post" class="space-y-4">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Server Name</label>
+                        <input type="text" name="name" id="name" value="{{ server.name }}" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
+                        <input type="text" name="address" id="address" value="{{ server.address }}" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="port" class="block text-sm font-medium text-gray-700">Port (optional)</label>
+                        <input type="number" name="port" id="port" value="{{ server.port or '' }}"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="check_type" class="block text-sm font-medium text-gray-700">Check Type</label>
+                        <select name="check_type" id="check_type" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="ping" {% if server.check_type == "ping" %}selected{% endif %}>Ping</option>
+                            <option value="port" {% if server.check_type == "port" %}selected{% endif %}>Port</option>
+                            <option value="http" {% if server.check_type == "http" %}selected{% endif %}>HTTP</option>
+                            <option value="http-keyword" {% if server.check_type == "http-keyword" %}selected{% endif %}>HTTP with Keyword</option>
+                        </select>
+                    </div>
+
+                    <div id="keyword-field" style="display: none;">
+                        <label for="keyword" class="block text-sm font-medium text-gray-700">Keyword</label>
+                        <input type="text" name="keyword" id="keyword" value="{{ server.keyword or '' }}"
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    </div>
+
+                    <div>
+                        <label for="category_id" class="block text-sm font-medium text-gray-700">Category</label>
+                        <select name="category_id" id="category_id" required
+                            class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            {% for category in categories %}
+                            <option value="{{ category.id }}" {% if server.category_id == category.id %}selected{% endif %}>{{ category.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit"
+                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Update Server
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
-    <div style="text-align: center; margin-top: 20px;">
-        <a href="/" class="button button-delete">Cancel</a>
-    </div>
+    <script>
+        const checkTypeSelect = document.getElementById('check_type');
+        const keywordField = document.getElementById('keyword-field');
+
+        function toggleKeywordField() {
+            keywordField.style.display = checkTypeSelect.value === 'http-keyword' ? 'block' : 'none';
+        }
+
+        checkTypeSelect.addEventListener('change', toggleKeywordField);
+        toggleKeywordField(); // Initial check
+    </script>
 </body>
 </html>
