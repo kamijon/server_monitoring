@@ -74,7 +74,10 @@ EOF
 echo "Creating database tables..."
 cd /opt/server-monitoring
 source venv/bin/activate
+export PYTHONPATH=$PYTHONPATH:/opt/server-monitoring
 python3 -c "
+import sys
+sys.path.append('/opt/server-monitoring')
 from app.database import Base, engine
 from app.models import User, Server, Category, Log
 Base.metadata.create_all(bind=engine)
@@ -83,6 +86,8 @@ Base.metadata.create_all(bind=engine)
 # Create initial admin user
 echo "Creating initial admin user..."
 python3 -c "
+import sys
+sys.path.append('/opt/server-monitoring')
 from app.database import SessionLocal
 from app.models import User
 from app.auth import get_password_hash
