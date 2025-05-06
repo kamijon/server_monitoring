@@ -20,6 +20,13 @@ sudo chown $USER:$USER /opt/server-monitoring
 echo "Cloning repository..."
 git clone https://github.com/kamijon/server-monitoring.git /opt/server-monitoring
 
+# Verify application structure
+echo "Verifying application structure..."
+if [ ! -d "/opt/server-monitoring/app" ]; then
+    echo "Error: Application directory structure is incorrect"
+    exit 1
+fi
+
 # Create and activate virtual environment
 echo "Setting up Python virtual environment..."
 cd /opt/server-monitoring
@@ -77,27 +84,43 @@ import os
 import sys
 
 # Add the application directory to Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+app_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, app_dir)
 
-from app.database import Base, engine, SessionLocal
-from app.models import User, Server, Category, Log
-from app.auth import get_password_hash
+# Verify imports
+try:
+    from app.database import Base, engine, SessionLocal
+    from app.models import User, Server, Category, Log
+    from app.auth import get_password_hash
+except ImportError as e:
+    print(f"Error importing modules: {e}")
+    print(f"Current Python path: {sys.path}")
+    print(f"Current directory: {os.getcwd()}")
+    print(f"Directory contents: {os.listdir(app_dir)}")
+    if os.path.exists(os.path.join(app_dir, 'app')):
+        print(f"App directory contents: {os.listdir(os.path.join(app_dir, 'app'))}")
+    sys.exit(1)
 
 def init_db():
-    # Create tables
-    Base.metadata.create_all(bind=engine)
-    
-    # Create admin user if not exists
-    db = SessionLocal()
-    if not db.query(User).first():
-        admin = User(
-            username='admin',
-            password_hash=get_password_hash('admin123'),
-            is_admin=True
-        )
-        db.add(admin)
-        db.commit()
-    db.close()
+    try:
+        # Create tables
+        Base.metadata.create_all(bind=engine)
+        
+        # Create admin user if not exists
+        db = SessionLocal()
+        if not db.query(User).first():
+            admin = User(
+                username='admin',
+                password_hash=get_password_hash('admin123'),
+                is_admin=True
+            )
+            db.add(admin)
+            db.commit()
+        db.close()
+        print("Database initialization completed successfully")
+    except Exception as e:
+        print(f"Error during database initialization: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     init_db()
@@ -107,6 +130,7 @@ EOF
 echo "Creating database tables and admin user..."
 cd /opt/server-monitoring
 source venv/bin/activate
+export PYTHONPATH=/opt/server-monitoring:$PYTHONPATH
 python3 init_db.py
 
 # Reload Supervisor
