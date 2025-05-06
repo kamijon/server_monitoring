@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Server</title>
+    <title>Add Server - Server Monitoring</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body class="bg-gray-100">
     <nav class="bg-white shadow-lg">
@@ -12,12 +13,36 @@
             <div class="flex justify-between h-16">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
-                        <span class="text-xl font-bold">Server Monitoring</span>
+                        <i data-lucide="server" class="h-8 w-8 text-indigo-600"></i>
+                        <span class="ml-2 text-xl font-bold">Server Monitoring</span>
                     </div>
                 </div>
-                <div class="flex items-center">
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="user" class="h-4 w-4 inline-block mr-1"></i>
+                        {{ user.username }}
+                    </span>
                     <a href="/" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                        Back to Dashboard
+                        <i data-lucide="layout-dashboard" class="h-4 w-4 inline-block mr-1"></i>
+                        Dashboard
+                    </a>
+                    <a href="/categories" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="folder" class="h-4 w-4 inline-block mr-1"></i>
+                        Categories
+                    </a>
+                    {% if user.is_admin %}
+                    <a href="/users" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="users" class="h-4 w-4 inline-block mr-1"></i>
+                        Users
+                    </a>
+                    {% endif %}
+                    <a href="/logs" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="file-text" class="h-4 w-4 inline-block mr-1"></i>
+                        Logs
+                    </a>
+                    <a href="/logout" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="log-out" class="h-4 w-4 inline-block mr-1"></i>
+                        Logout
                     </a>
                 </div>
             </div>
@@ -77,8 +102,8 @@
                     </div>
 
                     <div class="flex justify-end">
-                        <button type="submit"
-                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <button type="submit" class="inline-flex items-center bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
                             Add Server
                         </button>
                     </div>
@@ -88,6 +113,8 @@
     </div>
 
     <script>
+        lucide.createIcons();
+        
         const checkTypeSelect = document.getElementById('check_type');
         const keywordField = document.getElementById('keyword-field');
 

@@ -18,7 +18,14 @@ from datetime import datetime
 app = FastAPI()
 
 # session middleware
-app.add_middleware(SessionMiddleware, secret_key="kamran-monitoring-2025")
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="kamran-monitoring-2025",
+    session_cookie="server_monitoring_session",
+    max_age=14 * 24 * 60 * 60,  # 14 days
+    same_site="lax",
+    https_only=False
+)
 
 templates = Jinja2Templates(directory="app/templates")
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
@@ -40,25 +47,30 @@ async def startup_event():
     init_db()
 
 #  login
-@app.get("/login", response_class=HTMLResponse)
+@app.get("/login")
 async def login_form(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    if "user" in request.session:
+        return RedirectResponse(url="/", status_code=302)
+    return templates.TemplateResponse("login.html", {"request": request, "user": None})
 
 # login
 @app.post("/login")
-async def login(request: Request, username: str = Form(...), password: str = Form(...)):
+async def login(request: Request):
+    form_data = await request.form()
+    username = form_data.get("username")
+    password = form_data.get("password")
+
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
     db.close()
-    
-    if user and user.verify_password(password):
+
+    if user and verify_password(password, user.password):
         request.session["user"] = user.username
-        request.session["user_id"] = user.id
-        write_log(f"User {user.username} logged in")
-        send_telegram_message(f"*🔐 User {user.username} logged in*")
-        return RedirectResponse(url="/", status_code=303)
+        write_log(f"User {username} logged in")
+        send_telegram_message(f"*🔐 User Login*\nUser: {username}")
+        return RedirectResponse(url="/", status_code=302)
     else:
-        return RedirectResponse(url="/?error=invalid", status_code=303)
+        return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid username or password", "user": None})
 
 # logout
 @app.get("/logout")
@@ -71,74 +83,56 @@ async def logout(request: Request):
     return RedirectResponse(url="/login", status_code=303)
 
 
-@app.get("/signup", response_class=HTMLResponse)
+@app.get("/signup")
 async def signup_form(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
 
     db = SessionLocal()
-    user = db.query(User).filter(User.username == request.session["user"]).first()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     db.close()
 
-    if not user or not user.is_admin:
+    if not current_user or not current_user.is_admin:
         return RedirectResponse(url="/", status_code=302)
 
-    return templates.TemplateResponse("signup.html", {"request": request, "message": None, "error": None})
+    return templates.TemplateResponse("signup.html", {"request": request, "user": current_user})
 
 @app.post("/signup")
-async def signup(request: Request, username: str = Form(...), password: str = Form(...), confirm_password: str = Form(...)):
+async def signup(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
 
     db = SessionLocal()
     current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    db.close()
 
     if not current_user or not current_user.is_admin:
-        db.close()
         return RedirectResponse(url="/", status_code=302)
 
-    # Validate password confirmation
+    form_data = await request.form()
+    username = form_data.get("username")
+    password = form_data.get("password")
+    confirm_password = form_data.get("confirm_password")
+    is_admin = form_data.get("is_admin") == "on"
+
     if password != confirm_password:
-        db.close()
-        return templates.TemplateResponse("signup.html", {
-            "request": request,
-            "message": None,
-            "error": "Passwords do not match."
-        })
+        return templates.TemplateResponse("signup.html", {"request": request, "error": "Passwords do not match", "user": current_user})
 
-    # Validate password strength
-    if len(password) < 8:
-        db.close()
-        return templates.TemplateResponse("signup.html", {
-            "request": request,
-            "message": None,
-            "error": "Password must be at least 8 characters long."
-        })
-
+    db = SessionLocal()
     existing_user = db.query(User).filter(User.username == username).first()
     if existing_user:
         db.close()
-        return templates.TemplateResponse("signup.html", {
-            "request": request,
-            "message": None,
-            "error": "Username already exists."
-        })
+        return templates.TemplateResponse("signup.html", {"request": request, "error": "Username already exists", "user": current_user})
 
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    new_user = User(username=username, password_hash=hashed_password, is_admin=False)
+    hashed_password = get_password_hash(password)
+    new_user = User(username=username, password=hashed_password, is_admin=is_admin)
     db.add(new_user)
     db.commit()
     db.close()
 
-    # Log the user creation
-    write_log(f"New user created by admin {current_user.username}: {username}")
-    send_telegram_message(f"*👤 New User Created*\nCreated by: {current_user.username}\nUsername: {username}")
-
-    return templates.TemplateResponse("signup.html", {
-        "request": request,
-        "message": "User created successfully!",
-        "error": None
-    })
+    write_log(f"New user {username} created by admin {current_user.username}")
+    send_telegram_message(f"*👤 New User Created*\nUsername: {username}\nAdmin: {is_admin}\nCreated by: {current_user.username}")
+    return RedirectResponse(url="/users", status_code=303)
 
 @app.get("/users", response_class=HTMLResponse)
 async def list_users(request: Request):
@@ -154,7 +148,7 @@ async def list_users(request: Request):
     users = db.query(User).all()
     db.close()
 
-    return templates.TemplateResponse("users.html", {"request": request, "users": users, "current_user": current_user.username})
+    return templates.TemplateResponse("users.html", {"request": request, "users": users, "user": current_user})
 
 @app.post("/delete_user/{user_id}")
 async def delete_user(request: Request, user_id: int):
@@ -199,10 +193,12 @@ async def change_password(request: Request, old_password: str = Form(...), new_p
 
 
 @app.get("/", response_class=HTMLResponse)
-async def dashboard(request: Request):
+async def index(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
+
     db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     categories = db.query(Category).all()
     servers_by_category = {}
     for category in categories:
@@ -213,9 +209,6 @@ async def dashboard(request: Request):
     online = sum(1 for servers in servers_by_category.values() for s in servers if s.status == "Online")
     offline = sum(1 for servers in servers_by_category.values() for s in servers if s.status == "Offline")
     uptime = int((online / total) * 100) if total > 0 else 0
-
-    # Get current user
-    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     db.close()
 
     return templates.TemplateResponse("dashboard.html", {
@@ -233,12 +226,16 @@ async def dashboard(request: Request):
 async def add_server_form(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
+
     db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     categories = db.query(Category).all()
     db.close()
+
     return templates.TemplateResponse("add_server.html", {
         "request": request,
-        "categories": categories
+        "categories": categories,
+        "user": current_user
     })
 
 @app.post("/add_server")
@@ -310,7 +307,7 @@ async def stop_monitoring(server_id: int):
     return RedirectResponse(url="/", status_code=303)
 
 @app.get("/logs", response_class=HTMLResponse)
-async def view_logs(request: Request):
+async def list_logs(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
 
@@ -323,26 +320,31 @@ async def view_logs(request: Request):
 
     try:
         with open("server.log", "r") as f:
-            log_content = f.read()
+            logs = f.read()
     except FileNotFoundError:
-        log_content = "No logs available yet."
+        logs = "No logs available"
 
-    return templates.TemplateResponse("logs.html", {"request": request, "logs": log_content})
+    return templates.TemplateResponse("logs.html", {"request": request, "logs": logs, "user": current_user})
 
 @app.get("/edit/{server_id}", response_class=HTMLResponse)
-async def edit_server(request: Request, server_id: int):
+async def edit_server_form(request: Request, server_id: int):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
+
     db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     server = db.query(Server).filter(Server.id == server_id).first()
     categories = db.query(Category).all()
     db.close()
+
     if not server:
         return RedirectResponse(url="/", status_code=302)
+
     return templates.TemplateResponse("edit_server.html", {
         "request": request,
         "server": server,
-        "categories": categories
+        "categories": categories,
+        "user": current_user
     })
 
 @app.post("/update_server/{server_id}")
@@ -432,21 +434,25 @@ async def sync_servers(request: Request):
 async def list_categories(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
-    
+
     db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
     categories = db.query(Category).all()
     db.close()
-    
-    return templates.TemplateResponse("categories.html", {
-        "request": request,
-        "categories": categories
-    })
+
+    return templates.TemplateResponse("categories.html", {"request": request, "categories": categories, "user": current_user})
 
 @app.get("/categories/new", response_class=HTMLResponse)
-async def new_category_form(request: Request):
+async def add_category_form(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
-    return templates.TemplateResponse("new_category.html", {"request": request})
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    if not current_user or not current_user.is_admin:
+        db.close()
+        return RedirectResponse(url="/", status_code=302)
+    db.close()
 
 @app.post("/categories")
 async def create_category(request: Request, name: str = Form(...), description: str = Form(...)):
@@ -474,6 +480,25 @@ async def delete_category(request: Request, category_id: int):
     db.close()
     
     return RedirectResponse(url="/categories", status_code=302)
+
+@app.get("/edit_category/{category_id}", response_class=HTMLResponse)
+async def edit_category_form(request: Request, category_id: int):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    if not current_user or not current_user.is_admin:
+        db.close()
+        return RedirectResponse(url="/", status_code=302)
+
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        db.close()
+        return RedirectResponse(url="/categories", status_code=302)
+
+    db.close()
+    return templates.TemplateResponse("edit_category.html", {"request": request, "category": category, "user": current_user})
 
 async def check_server_status(server: Server):
     try:
@@ -513,4 +538,112 @@ async def check_server_status(server: Server):
     except Exception as e:
         print(f"Error checking server {server.name}: {str(e)}")
         return False
+
+@app.get("/edit_user/{user_id}", response_class=HTMLResponse)
+async def edit_user_form(request: Request, user_id: int):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    if not current_user or not current_user.is_admin:
+        db.close()
+        return RedirectResponse(url="/", status_code=302)
+
+    edit_user = db.query(User).filter(User.id == user_id).first()
+    if not edit_user:
+        db.close()
+        return RedirectResponse(url="/users", status_code=302)
+
+    db.close()
+    return templates.TemplateResponse("edit_user.html", {"request": request, "edit_user": edit_user, "user": current_user})
+
+@app.post("/edit_user/{user_id}")
+async def edit_user(request: Request, user_id: int, username: str = Form(...), is_admin: bool = Form(False), new_password: str = Form(None), confirm_password: str = Form(None)):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    user_to_edit = db.query(User).filter(User.id == user_id).first()
+    
+    if not current_user or not current_user.is_admin or not user_to_edit:
+        db.close()
+        return RedirectResponse(url="/users", status_code=302)
+
+    try:
+        # Check if username is already taken by another user
+        existing_user = db.query(User).filter(User.username == username, User.id != user_id).first()
+        if existing_user:
+            db.close()
+            return templates.TemplateResponse("edit_user.html", {
+                "request": request,
+                "user": user_to_edit,
+                "message": None,
+                "error": "Username already exists."
+            })
+
+        # Handle password change if new password is provided
+        if new_password:
+            if new_password != confirm_password:
+                db.close()
+                return templates.TemplateResponse("edit_user.html", {
+                    "request": request,
+                    "user": user_to_edit,
+                    "message": None,
+                    "error": "New passwords do not match."
+                })
+            
+            if len(new_password) < 8:
+                db.close()
+                return templates.TemplateResponse("edit_user.html", {
+                    "request": request,
+                    "user": user_to_edit,
+                    "message": None,
+                    "error": "Password must be at least 8 characters long."
+                })
+            
+            hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            user_to_edit.password_hash = hashed_password
+
+        user_to_edit.username = username
+        user_to_edit.is_admin = is_admin
+        db.commit()
+        
+        write_log(f"User {user_to_edit.username} updated by admin {current_user.username}")
+        send_telegram_message(f"*👤 User Updated*\nUpdated by: {current_user.username}\nUsername: {user_to_edit.username}\nAdmin: {is_admin}")
+        
+        db.close()
+        return RedirectResponse(url="/users", status_code=303)
+    except Exception as e:
+        db.rollback()
+        db.close()
+        return templates.TemplateResponse("edit_user.html", {
+            "request": request,
+            "user": user_to_edit,
+            "message": None,
+            "error": f"An error occurred: {str(e)}"
+        })
+
+@app.post("/clear_logs")
+async def clear_logs(request: Request):
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    db.close()
+
+    if not current_user or not current_user.is_admin:
+        return RedirectResponse(url="/", status_code=302)
+
+    try:
+        with open("server.log", "w") as f:
+            f.write("")
+        write_log(f"Logs cleared by admin {current_user.username}")
+        send_telegram_message(f"*🗑️ Logs Cleared*\nCleared by: {current_user.username}")
+        return RedirectResponse(url="/logs", status_code=303)
+    except Exception as e:
+        print(f"Error clearing logs: {str(e)}")
+        return RedirectResponse(url="/logs?error=clear_failed", status_code=303)
 

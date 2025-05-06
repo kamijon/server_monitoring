@@ -1,142 +1,110 @@
 #!/bin/bash
 
-# Colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Exit on error
+set -e
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}Please run as root${NC}"
-    exit 1
-fi
+echo "Starting installation of Server Monitoring..."
 
-# Check Python version
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Python 3 is required but not installed${NC}"
-    exit 1
-fi
+# Update system and install dependencies
+echo "Updating system and installing dependencies..."
+sudo apt update
+sudo apt upgrade -y
+sudo apt install -y python3-full python3-pip python3-venv git nginx supervisor
 
-# Create installation directory
-INSTALL_DIR="/opt/server-monitoring"
-echo -e "${GREEN}Creating installation directory...${NC}"
-mkdir -p $INSTALL_DIR
-cd $INSTALL_DIR
+# Create application directory
+echo "Creating application directory..."
+sudo mkdir -p /opt/server-monitoring
+sudo chown $USER:$USER /opt/server-monitoring
 
-# Download the application files
-echo -e "${GREEN}Downloading application files...${NC}"
-curl -L https://github.com/kamijon/server-monitoring/archive/main.tar.gz | tar xz --strip-components=1
+# Clone the repository
+echo "Cloning repository..."
+git clone https://github.com/kamijon/server-monitoring.git /opt/server-monitoring
 
-# Create virtual environment
-echo -e "${GREEN}Setting up Python virtual environment...${NC}"
+# Create and activate virtual environment
+echo "Setting up Python virtual environment..."
+cd /opt/server-monitoring
+rm -rf venv  # Remove existing venv if any
 python3 -m venv venv
 source venv/bin/activate
 
-# Install dependencies
-echo -e "${GREEN}Installing dependencies...${NC}"
-pip install -r requirements.txt
+# Upgrade pip and install Python dependencies
+echo "Installing Python dependencies..."
+python3 -m pip install --upgrade pip
+python3 -m pip install -r requirements.txt
 
-# Create systemd service files
-echo -e "${GREEN}Creating systemd service files...${NC}"
+# Create log file and set permissions
+echo "Setting up log file..."
+sudo touch /opt/server-monitoring/server.log
+sudo chown $USER:$USER /opt/server-monitoring/server.log
 
-# Main application service
-cat > /etc/systemd/system/server-monitoring.service << EOL
-[Unit]
-Description=Server Monitoring Application
-After=network.target
+# Create Nginx configuration
+echo "Configuring Nginx..."
+sudo tee /etc/nginx/sites-available/server-monitoring << EOF
+server {
+    listen 80;
+    server_name _;
 
-[Service]
-User=root
-Group=root
-WorkingDirectory=$INSTALL_DIR
-Environment="PATH=$INSTALL_DIR/venv/bin"
-ExecStart=$INSTALL_DIR/venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
-Restart=always
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
 
-[Install]
-WantedBy=multi-user.target
-EOL
+# Enable Nginx site
+sudo ln -sf /etc/nginx/sites-available/server-monitoring /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
+sudo nginx -t
+sudo systemctl restart nginx
 
-# Sync service
-cat > /etc/systemd/system/sync-ips.service << EOL
-[Unit]
-Description=Server List Sync Service
-After=network.target
-
-[Service]
-User=root
-Group=root
-WorkingDirectory=$INSTALL_DIR
-Environment="PATH=$INSTALL_DIR/venv/bin"
-ExecStart=$INSTALL_DIR/venv/bin/python sync_ips.py
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Sync timer
-cat > /etc/systemd/system/sync-ips.timer << EOL
-[Unit]
-Description=Run sync-ips every 5 minutes
-
-[Timer]
-OnBootSec=1min
-OnUnitActiveSec=5min
-Unit=sync-ips.service
-
-[Install]
-WantedBy=timers.target
-EOL
-
-# Monitor service
-cat > /etc/systemd/system/monitor-servers.service << EOL
-[Unit]
-Description=Server Monitoring Service
-After=network.target
-
-[Service]
-User=root
-Group=root
-WorkingDirectory=$INSTALL_DIR
-Environment="PATH=$INSTALL_DIR/venv/bin"
-ExecStart=$INSTALL_DIR/venv/bin/python -m app.monitor
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
-EOL
-
-# Set permissions
-echo -e "${GREEN}Setting permissions...${NC}"
-chown -R root:root $INSTALL_DIR
-chmod -R 755 $INSTALL_DIR
-
-# Enable and start services
-echo -e "${GREEN}Enabling and starting services...${NC}"
-systemctl daemon-reload
-systemctl enable --now server-monitoring.service
-systemctl enable --now monitor-servers.service
-systemctl enable --now sync-ips.timer
+# Create Supervisor configuration
+echo "Configuring Supervisor..."
+sudo tee /etc/supervisor/conf.d/server-monitoring.conf << EOF
+[program:server-monitoring]
+directory=/opt/server-monitoring
+command=/opt/server-monitoring/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+user=$USER
+autostart=true
+autorestart=true
+stderr_logfile=/var/log/supervisor/server-monitoring.err.log
+stdout_logfile=/var/log/supervisor/server-monitoring.out.log
+environment=PYTHONUNBUFFERED=1
+EOF
 
 # Create initial admin user
-echo -e "${GREEN}Creating initial admin user...${NC}"
+echo "Creating initial admin user..."
+cd /opt/server-monitoring
 source venv/bin/activate
-python -c "
+python3 -c "
 from app.database import SessionLocal, User
 import bcrypt
 db = SessionLocal()
 if not db.query(User).first():
     hashed = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt())
-    admin = User(username='admin', password=hashed.decode('utf-8'), is_admin=True)
-    db.add(admin)
+    user = User(username='admin', password=hashed.decode('utf-8'), is_admin=True)
+    db.add(user)
     db.commit()
 db.close()
 "
 
-echo -e "${GREEN}✅ Installation completed!${NC}"
-echo -e "${GREEN}Visit your server at: http://<your-server-ip>:8000${NC}"
-echo -e "${GREEN}Default admin credentials:${NC}"
-echo -e "${GREEN}Username: admin${NC}"
-echo -e "${GREEN}Password: admin123${NC}"
-echo -e "${GREEN}Please change the default password after first login!${NC}"
+# Reload Supervisor
+sudo supervisorctl reread
+sudo supervisorctl update
+
+# Configure firewall
+echo "Configuring firewall..."
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 22/tcp
+sudo ufw --force enable
+
+echo "Installation completed successfully!"
+echo "The application should now be running at http://your-server-ip"
+echo "Default login credentials:"
+echo "Username: admin"
+echo "Password: admin123"
+echo "To check the status, run: sudo supervisorctl status server-monitoring"
+echo "To view logs, run: sudo tail -f /var/log/supervisor/server-monitoring.out.log"

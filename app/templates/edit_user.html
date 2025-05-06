@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User - Server Monitoring</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-lucide="server" class="h-8 w-8 text-indigo-600"></i>
+                        <span class="ml-2 text-xl font-bold">Server Monitoring</span>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="layout-dashboard" class="h-4 w-4 inline-block mr-1"></i>
+                        Dashboard
+                    </a>
+                    <a href="/categories" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="folder" class="h-4 w-4 inline-block mr-1"></i>
+                        Categories
+                    </a>
+                    <a href="/users" class="bg-indigo-100 text-indigo-700 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="users" class="h-4 w-4 inline-block mr-1"></i>
+                        Users
+                    </a>
+                    <a href="/logs" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="file-text" class="h-4 w-4 inline-block mr-1"></i>
+                        Logs
+                    </a>
+                    <a href="/logout" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
+                        <i data-lucide="log-out" class="h-4 w-4 inline-block mr-1"></i>
+                        Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                    <i data-lucide="user" class="h-5 w-5 inline-block mr-2"></i>
+                    Edit User
+                </h3>
+                
+                {% if error %}
+                <div class="rounded-md bg-red-50 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <i data-lucide="alert-circle" class="h-5 w-5 text-red-400"></i>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">
+                                {{ error }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <form action="/edit_user/{{ user.id }}" method="post" class="space-y-6">
+                    <div>
+                        <label for="username" class="block text-sm font-medium text-gray-700">
+                            <i data-lucide="user" class="h-4 w-4 inline-block mr-1"></i>
+                            Username
+                        </label>
+                        <div class="mt-1">
+                            <input type="text" name="username" id="username" value="{{ user.username }}"
+                                class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                                required>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center">
+                        <input type="checkbox" name="is_admin" id="is_admin" {% if user.is_admin %}checked{% endif %}
+                            class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="is_admin" class="ml-2 block text-sm text-gray-900">
+                            <i data-lucide="shield" class="h-4 w-4 inline-block mr-1"></i>
+                            Admin privileges
+                        </label>
+                    </div>
+
+                    <div class="border-t border-gray-200 pt-6">
+                        <h4 class="text-md font-medium text-gray-900 mb-4">
+                            <i data-lucide="key" class="h-4 w-4 inline-block mr-1"></i>
+                            Change Password
+                        </h4>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="new_password" class="block text-sm font-medium text-gray-700">
+                                    New Password
+                                </label>
+                                <div class="mt-1">
+                                    <input type="password" name="new_password" id="new_password"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="confirm_password" class="block text-sm font-medium text-gray-700">
+                                    Confirm New Password
+                                </label>
+                                <div class="mt-1">
+                                    <input type="password" name="confirm_password" id="confirm_password"
+                                        class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3">
+                        <a href="/users" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i data-lucide="x" class="h-4 w-4 mr-2"></i>
+                            Cancel
+                        </a>
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            <i data-lucide="save" class="h-4 w-4 mr-2"></i>
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html> 
