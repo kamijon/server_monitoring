@@ -23,14 +23,10 @@ git clone https://github.com/kamijon/server-monitoring.git /opt/server-monitorin
 # Create and activate virtual environment
 echo "Setting up Python virtual environment..."
 cd /opt/server-monitoring
-rm -rf venv  # Remove existing venv if any
-python3 -m venv venv
+python3 -m venv venv --clear
 source venv/bin/activate
-
-# Upgrade pip and install Python dependencies
-echo "Installing Python dependencies..."
 python3 -m pip install --upgrade pip
-python3 -m pip install -r requirements.txt
+pip install -r requirements.txt
 
 # Create log file and set permissions
 echo "Setting up log file..."
@@ -74,18 +70,31 @@ stdout_logfile=/var/log/supervisor/server-monitoring.out.log
 environment=PYTHONUNBUFFERED=1
 EOF
 
-# Create initial admin user
-echo "Creating initial admin user..."
+# Create database tables
+echo "Creating database tables..."
 cd /opt/server-monitoring
 source venv/bin/activate
 python3 -c "
-from app.database import SessionLocal, User
-import bcrypt
+from app.database import Base, engine
+from app.models import User, Server, Category, Log
+Base.metadata.create_all(bind=engine)
+"
+
+# Create initial admin user
+echo "Creating initial admin user..."
+python3 -c "
+from app.database import SessionLocal
+from app.models import User
+from app.auth import get_password_hash
+
 db = SessionLocal()
 if not db.query(User).first():
-    hashed = bcrypt.hashpw('admin123'.encode('utf-8'), bcrypt.gensalt())
-    user = User(username='admin', password=hashed.decode('utf-8'), is_admin=True)
-    db.add(user)
+    admin = User(
+        username='admin',
+        password_hash=get_password_hash('admin123'),
+        is_admin=True
+    )
+    db.add(admin)
     db.commit()
 db.close()
 "
@@ -93,6 +102,7 @@ db.close()
 # Reload Supervisor
 sudo supervisorctl reread
 sudo supervisorctl update
+sudo supervisorctl start server-monitoring
 
 # Configure firewall
 echo "Configuring firewall..."
