@@ -37,7 +37,7 @@ fi
 echo "Setting up Python virtual environment..."
 cd /opt/server-monitoring
 rm -rf venv
-python3 -m venv venv
+/usr/bin/python3 -m venv venv
 source venv/bin/activate
 
 # Verify Python and pip versions
@@ -96,8 +96,9 @@ echo "Creating startup script..."
 cat > /opt/server-monitoring/start.sh << 'EOF'
 #!/bin/bash
 cd /opt/server-monitoring
-source venv/bin/activate
-exec python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
+source /opt/server-monitoring/venv/bin/activate
+export PYTHONPATH=/opt/server-monitoring
+exec /opt/server-monitoring/venv/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
 EOF
 
 # Make the startup script executable
