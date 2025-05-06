@@ -11,6 +11,12 @@ sudo apt update
 sudo apt upgrade -y
 sudo apt install -y python3-full python3-pip python3-venv git nginx supervisor
 
+# Ensure supervisor is running
+echo "Ensuring supervisor is running..."
+sudo systemctl enable supervisor
+sudo systemctl start supervisor
+sudo systemctl status supervisor
+
 # Create application directory
 echo "Creating application directory..."
 sudo mkdir -p /opt/server-monitoring
@@ -64,6 +70,11 @@ sudo ln -sf /etc/nginx/sites-available/server-monitoring /etc/nginx/sites-enable
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
+
+# Set up log directory for supervisor
+echo "Setting up supervisor log directory..."
+sudo mkdir -p /var/log/supervisor
+sudo chown -R $USER:$USER /var/log/supervisor
 
 # Create Supervisor configuration
 echo "Configuring Supervisor..."
@@ -136,10 +147,6 @@ cd /opt/server-monitoring
 source venv/bin/activate
 export PYTHONPATH=/opt/server-monitoring:$PYTHONPATH
 python3 init_db.py
-
-# Set up log directory for supervisor
-sudo mkdir -p /var/log/supervisor
-sudo chown -R $USER:$USER /var/log/supervisor
 
 # Reload Supervisor
 echo "Starting the application..."
