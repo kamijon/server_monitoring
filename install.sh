@@ -81,13 +81,13 @@ echo "Configuring Supervisor..."
 sudo tee /etc/supervisor/conf.d/server-monitoring.conf << EOF
 [program:server-monitoring]
 directory=/opt/server-monitoring
-command=/opt/server-monitoring/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4
+command=/opt/server-monitoring/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
 user=$USER
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/supervisor/server-monitoring.err.log
 stdout_logfile=/var/log/supervisor/server-monitoring.out.log
-environment=PYTHONUNBUFFERED=1
+environment=PYTHONUNBUFFERED=1,PYTHONPATH="/opt/server-monitoring"
 stopasgroup=true
 killasgroup=true
 EOF
@@ -152,16 +152,34 @@ python3 init_db.py
 echo "Starting the application..."
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl restart server-monitoring
+
+# Wait for supervisor to update
+sleep 2
+
+# Check supervisor status
+echo "Checking supervisor status..."
+sudo supervisorctl status
+
+# Start the application
+echo "Starting server-monitoring..."
+sudo supervisorctl start server-monitoring
 
 # Wait for the application to start
 echo "Waiting for the application to start..."
 sleep 5
 
+# Check application status
+echo "Checking application status..."
+sudo supervisorctl status server-monitoring
+
 # Check if the application is running
 if ! curl -s http://127.0.0.1:8000 > /dev/null; then
     echo "Error: Application failed to start. Checking logs..."
+    echo "=== Supervisor Status ==="
+    sudo supervisorctl status
+    echo "=== Error Log ==="
     sudo tail -n 50 /var/log/supervisor/server-monitoring.err.log
+    echo "=== Output Log ==="
     sudo tail -n 50 /var/log/supervisor/server-monitoring.out.log
     exit 1
 fi
