@@ -49,7 +49,7 @@ pip --version
 echo "Installing dependencies..."
 python3 -m pip install --upgrade pip
 pip install -r requirements.txt
-pip install uvicorn
+pip install uvicorn fastapi sqlalchemy
 
 # Verify uvicorn installation
 echo "Verifying uvicorn installation..."
@@ -91,12 +91,24 @@ echo "Setting up supervisor log directory..."
 sudo mkdir -p /var/log/supervisor
 sudo chown -R $USER:$USER /var/log/supervisor
 
+# Create a startup script
+echo "Creating startup script..."
+cat > /opt/server-monitoring/start.sh << 'EOF'
+#!/bin/bash
+cd /opt/server-monitoring
+source venv/bin/activate
+exec python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
+EOF
+
+# Make the startup script executable
+chmod +x /opt/server-monitoring/start.sh
+
 # Create Supervisor configuration
 echo "Configuring Supervisor..."
 sudo tee /etc/supervisor/conf.d/server-monitoring.conf << EOF
 [program:server-monitoring]
 directory=/opt/server-monitoring
-command=/opt/server-monitoring/venv/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
+command=/opt/server-monitoring/start.sh
 user=$USER
 autostart=true
 autorestart=true
