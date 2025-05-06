@@ -14,7 +14,7 @@ sudo apt install -y python3-full python3-pip python3-venv git nginx supervisor
 # Create application directory
 echo "Creating application directory..."
 sudo mkdir -p /opt/server-monitoring
-sudo chown $USER:$USER /opt/server-monitoring
+sudo chown -R $USER:$USER /opt/server-monitoring
 
 # Clone the repository
 echo "Cloning repository..."
@@ -53,6 +53,8 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
     }
 }
 EOF
@@ -68,13 +70,15 @@ echo "Configuring Supervisor..."
 sudo tee /etc/supervisor/conf.d/server-monitoring.conf << EOF
 [program:server-monitoring]
 directory=/opt/server-monitoring
-command=/opt/server-monitoring/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+command=/opt/server-monitoring/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4
 user=$USER
 autostart=true
 autorestart=true
 stderr_logfile=/var/log/supervisor/server-monitoring.err.log
 stdout_logfile=/var/log/supervisor/server-monitoring.out.log
 environment=PYTHONUNBUFFERED=1
+stopasgroup=true
+killasgroup=true
 EOF
 
 # Create database initialization script
@@ -133,10 +137,27 @@ source venv/bin/activate
 export PYTHONPATH=/opt/server-monitoring:$PYTHONPATH
 python3 init_db.py
 
+# Set up log directory for supervisor
+sudo mkdir -p /var/log/supervisor
+sudo chown -R $USER:$USER /var/log/supervisor
+
 # Reload Supervisor
+echo "Starting the application..."
 sudo supervisorctl reread
 sudo supervisorctl update
-sudo supervisorctl start server-monitoring
+sudo supervisorctl restart server-monitoring
+
+# Wait for the application to start
+echo "Waiting for the application to start..."
+sleep 5
+
+# Check if the application is running
+if ! curl -s http://127.0.0.1:8000 > /dev/null; then
+    echo "Error: Application failed to start. Checking logs..."
+    sudo tail -n 50 /var/log/supervisor/server-monitoring.err.log
+    sudo tail -n 50 /var/log/supervisor/server-monitoring.out.log
+    exit 1
+fi
 
 # Configure firewall
 echo "Configuring firewall..."
