@@ -36,10 +36,25 @@ fi
 # Create and activate virtual environment
 echo "Setting up Python virtual environment..."
 cd /opt/server-monitoring
-python3 -m venv venv --clear
+rm -rf venv
+python3 -m venv venv
 source venv/bin/activate
+
+# Verify Python and pip versions
+echo "Verifying Python environment..."
+python3 --version
+pip --version
+
+# Install dependencies
+echo "Installing dependencies..."
 python3 -m pip install --upgrade pip
 pip install -r requirements.txt
+pip install uvicorn
+
+# Verify uvicorn installation
+echo "Verifying uvicorn installation..."
+which uvicorn
+uvicorn --version
 
 # Create log file and set permissions
 echo "Setting up log file..."
@@ -81,7 +96,7 @@ echo "Configuring Supervisor..."
 sudo tee /etc/supervisor/conf.d/server-monitoring.conf << EOF
 [program:server-monitoring]
 directory=/opt/server-monitoring
-command=/opt/server-monitoring/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
+command=/opt/server-monitoring/venv/bin/python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4 --log-level debug
 user=$USER
 autostart=true
 autorestart=true
