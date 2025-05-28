@@ -7,18 +7,52 @@
     <title>Server Monitoring Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @media (max-width: 640px) {
+            .mobile-table {
+                display: block;
+                width: 100%;
+            }
+            .mobile-table thead {
+                display: none;
+            }
+            .mobile-table tbody {
+                display: block;
+                width: 100%;
+            }
+            .mobile-table tr {
+                display: block;
+                margin-bottom: 1rem;
+                border: 1px solid #e5e7eb;
+                border-radius: 0.5rem;
+                padding: 0.5rem;
+            }
+            .mobile-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.5rem;
+                border: none;
+            }
+            .mobile-table td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                margin-right: 1rem;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <nav class="bg-white shadow-lg">
         <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between h-16">
-                <div class="flex">
+            <div class="flex flex-col sm:flex-row justify-between h-auto sm:h-16 py-4 sm:py-0">
+                <div class="flex items-center mb-4 sm:mb-0">
                     <div class="flex-shrink-0 flex items-center">
                         <i data-lucide="server" class="h-8 w-8 text-indigo-600"></i>
                         <span class="ml-2 text-xl font-bold">Server Monitoring</span>
                     </div>
                 </div>
-                <div class="flex items-center space-x-4">
+                <div class="flex flex-wrap items-center gap-2 sm:gap-4">
                     <span class="text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
                         <i data-lucide="user" class="h-4 w-4 inline-block mr-1"></i>
                         {{ user.username }}
@@ -49,16 +83,16 @@
     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <!-- Stats and Add Server Button -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 w-full sm:w-auto">
+            <div class="grid grid-cols-2 gap-4 sm:grid-cols-4 w-full">
                 <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
+                    <div class="p-4">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <i data-lucide="server" class="h-6 w-6 text-gray-400"></i>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="ml-3 w-0 flex-1">
                                 <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">Total Servers</dt>
+                                    <dt class="text-sm font-medium text-gray-500 truncate">Total</dt>
                                     <dd class="text-lg font-semibold text-gray-900">{{ total }}</dd>
                                 </dl>
                             </div>
@@ -66,12 +100,12 @@
                     </div>
                 </div>
                 <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
+                    <div class="p-4">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <i data-lucide="check-circle" class="h-6 w-6 text-green-400"></i>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="ml-3 w-0 flex-1">
                                 <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Online</dt>
                                     <dd class="text-lg font-semibold text-gray-900">{{ online }}</dd>
@@ -81,12 +115,12 @@
                     </div>
                 </div>
                 <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
+                    <div class="p-4">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <i data-lucide="x-circle" class="h-6 w-6 text-red-400"></i>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="ml-3 w-0 flex-1">
                                 <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Offline</dt>
                                     <dd class="text-lg font-semibold text-gray-900">{{ offline }}</dd>
@@ -96,12 +130,12 @@
                     </div>
                 </div>
                 <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="p-5">
+                    <div class="p-4">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <i data-lucide="activity" class="h-6 w-6 text-blue-400"></i>
                             </div>
-                            <div class="ml-5 w-0 flex-1">
+                            <div class="ml-3 w-0 flex-1">
                                 <dl>
                                     <dt class="text-sm font-medium text-gray-500 truncate">Uptime</dt>
                                     <dd class="text-lg font-semibold text-gray-900">{{ uptime }}%</dd>
@@ -133,7 +167,7 @@
                 </div>
                 <div class="border-t border-gray-200">
                     <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200 mobile-table">
                             <thead class="bg-gray-50">
                                 <tr>
                                     <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -145,14 +179,14 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 {% for server in servers %}
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ server.name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ server.address }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" data-label="Name">{{ server.name }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-label="Address">{{ server.address }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap" data-label="Status">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if server.status == 'Online' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
                                             {{ server.status }}
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-label="Actions">
                                         <div class="flex flex-wrap gap-2">
                                             {% if server.monitoring %}
                                             <form action="/stop/{{ server.id }}" method="post" class="inline">
