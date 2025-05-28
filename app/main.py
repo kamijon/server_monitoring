@@ -7,7 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.database import UptimeLog, Category
 from fastapi.responses import JSONResponse
 import asyncio
-from sync_ips import sync_ips
+from app.sync_servers import sync_servers
 
 from app.notifier import send_telegram_message, write_log
 from app.database import SessionLocal, Server, User
@@ -27,13 +27,13 @@ app.add_middleware(
     https_only=False
 )
 
-templates = Jinja2Templates(directory="app/templates")
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="/opt/server-monitoring/app/templates")
+app.mount("/static", StaticFiles(directory="/opt/server-monitoring/app/static"), name="static")
 
 async def sync_servers_task():
     while True:
         try:
-            sync_ips()
+            sync_servers()
         except Exception as e:
             print(f"Error syncing servers: {e}")
         await asyncio.sleep(300)  # 5 minutes
@@ -64,7 +64,7 @@ async def login(request: Request):
     user = db.query(User).filter(User.username == username).first()
     db.close()
 
-    if user and verify_password(password, user.password):
+    if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
         request.session["user"] = user.username
         write_log(f"User {username} logged in")
         send_telegram_message(f"*🔐 User Login*\nUser: {username}")
@@ -319,10 +319,24 @@ async def list_logs(request: Request):
         return RedirectResponse(url="/", status_code=302)
 
     try:
-        with open("server.log", "r") as f:
-            logs = f.read()
+        with open("/opt/server-monitoring/server.log", "r") as f:
+            log_lines = f.readlines()
+            logs = []
+            for line in log_lines:
+                try:
+                    # Parse timestamp and message from log line
+                    timestamp_str = line[:19]  # First 19 characters for timestamp
+                    message = line[20:].strip()  # Rest is the message
+                    timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+                    logs.append({
+                        "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+                        "message": message
+                    })
+                except Exception as e:
+                    print(f"Error parsing log line: {e}")
+                    continue
     except FileNotFoundError:
-        logs = "No logs available"
+        logs = []
 
     return templates.TemplateResponse("logs.html", {"request": request, "logs": logs, "user": current_user})
 
@@ -417,11 +431,11 @@ async def chart_data(server_id: int):
     return JSONResponse(content={"labels": labels, "statuses": statuses})
 
 @app.get("/sync")
-async def sync_servers(request: Request):
+async def sync_servers_endpoint(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
     try:
-        changes = sync_ips()
+        changes = sync_servers()
         if changes:
             return JSONResponse(content={"status": "success", "changes": changes})
         else:
@@ -511,7 +525,7 @@ async def check_server_status(server: Server):
         elif server.check_type == "http":
             response = await check_http(server.address, server.port)
             new_status = "Online" if response else "Offline"
-        elif server.check_type == "http_keyword":
+        elif server.check_type == "http-keyword":
             response = await check_http_keyword(server.address, server.port, server.keyword)
             new_status = "Online" if response else "Offline"
         else:

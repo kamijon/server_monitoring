@@ -4,105 +4,38 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Server Monitoring</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between h-16">
-                <div class="flex">
-                    <div class="flex-shrink-0 flex items-center">
-                        <i data-lucide="server" class="h-8 w-8 text-indigo-600"></i>
-                        <span class="ml-2 text-xl font-bold">Server Monitoring</span>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="text-center">Login</h3>
                     </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-gray-700 px-3 py-2 rounded-md text-sm font-medium">
-                        <i data-lucide="user" class="h-4 w-4 inline-block mr-1"></i>
-                        {{ user.username }}
-                    </span>
-                    <a href="/" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                        <i data-lucide="layout-dashboard" class="h-4 w-4 inline-block mr-1"></i>
-                        Dashboard
-                    </a>
-                    <a href="/categories" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                        <i data-lucide="folder" class="h-4 w-4 inline-block mr-1"></i>
-                        Categories
-                    </a>
-                    {% if user.is_admin %}
-                    <a href="/users" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                        <i data-lucide="users" class="h-4 w-4 inline-block mr-1"></i>
-                        Users
-                    </a>
-                    {% endif %}
-                    <a href="/logs" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                        <i data-lucide="file-text" class="h-4 w-4 inline-block mr-1"></i>
-                        Logs
-                    </a>
-                    <a href="/logout" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">
-                        <i data-lucide="log-out" class="h-4 w-4 inline-block mr-1"></i>
-                        Logout
-                    </a>
+                    <div class="card-body">
+                        {% if error %}
+                        <div class="alert alert-danger">{{ error }}</div>
+                        {% endif %}
+                        <form method="POST" action="/login">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">Login</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </nav>
-    <div class="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-        <div class="text-center">
-            <i data-lucide="server" class="h-12 w-12 text-indigo-600 mx-auto"></i>
-            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-                Server Monitoring
-            </h2>
-            <p class="mt-2 text-sm text-gray-600">
-                Sign in to your account
-            </p>
-        </div>
-        <form class="mt-8 space-y-6" action="/login" method="post">
-            <div class="rounded-md shadow-sm -space-y-px">
-                <div>
-                    <label for="username" class="sr-only">Username</label>
-                    <input id="username" name="username" type="text" required 
-                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
-                        placeholder="Username">
-                </div>
-                <div>
-                    <label for="password" class="sr-only">Password</label>
-                    <input id="password" name="password" type="password" required 
-                        class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm" 
-                        placeholder="Password">
-                </div>
-            </div>
-
-            {% if error %}
-            <div class="rounded-md bg-red-50 p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <i data-lucide="alert-circle" class="h-5 w-5 text-red-400"></i>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-red-800">
-                            {{ error }}
-                        </h3>
-                    </div>
-                </div>
-            </div>
-            {% endif %}
-
-            <div>
-                <button type="submit" 
-                    class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                    <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                        <i data-lucide="log-in" class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"></i>
-                    </span>
-                    Sign in
-                </button>
-            </div>
-        </form>
     </div>
-
-    <script>
-        lucide.createIcons();
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
