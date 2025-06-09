@@ -168,57 +168,57 @@
                 <div class="border-t border-gray-200">
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 mobile-table">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                {% for server in servers %}
-                                <tr>
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for server in servers %}
+                            <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" data-label="Name">{{ server.name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-label="Address">{{ server.address }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap" data-label="Status">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if server.status == 'Online' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
-                                            {{ server.status }}
-                                        </span>
-                                    </td>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if server.status == 'Online' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                        {{ server.status }}
+                                    </span>
+                                </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" data-label="Actions">
                                         <div class="flex flex-wrap gap-2">
-                                            {% if server.monitoring %}
-                                            <form action="/stop/{{ server.id }}" method="post" class="inline">
+                                        {% if server.monitoring %}
+                                        <form action="/stop/{{ server.id }}" method="post" class="inline">
                                                 <button type="submit" class="inline-flex items-center bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs">
                                                     <i data-lucide="stop-circle" class="h-3 w-3 mr-1"></i>
-                                                    Stop
-                                                </button>
-                                            </form>
-                                            {% else %}
-                                            <form action="/start/{{ server.id }}" method="post" class="inline">
+                                                Stop
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <form action="/start/{{ server.id }}" method="post" class="inline">
                                                 <button type="submit" class="inline-flex items-center bg-green-500 hover:bg-green-700 text-white font-bold py-1 px-2 rounded text-xs">
                                                     <i data-lucide="play" class="h-3 w-3 mr-1"></i>
-                                                    Start
-                                                </button>
-                                            </form>
-                                            {% endif %}
+                                                Start
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                             <a href="/edit/{{ server.id }}" class="inline-flex items-center bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs">
                                                 <i data-lucide="edit" class="h-3 w-3 mr-1"></i>
-                                                Edit
-                                            </a>
-                                            <form action="/delete/{{ server.id }}" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this server?');">
+                                            Edit
+                                        </a>
+                                        <form action="/delete/{{ server.id }}" method="post" class="inline" onsubmit="return confirm('Are you sure you want to delete this server?');">
                                                 <button type="submit" class="inline-flex items-center bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs">
                                                     <i data-lucide="trash-2" class="h-3 w-3 mr-1"></i>
-                                                    Delete
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                                                Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                     </div>
                 </div>
             </div>

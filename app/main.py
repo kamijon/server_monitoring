@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 import asyncio
 from app.sync_servers import sync_servers
 
-from app.notifier import send_telegram_message, write_log
+from app.notifier import send_telegram_message, write_log, add_chat_id, remove_chat_id, load_chat_ids
 from app.database import SessionLocal, Server, User
 from app.monitor import monitor_servers
 import bcrypt
@@ -63,7 +63,7 @@ async def login(request: Request):
     db = SessionLocal()
     user = db.query(User).filter(User.username == username).first()
     db.close()
-
+    
     if user and bcrypt.checkpw(password.encode('utf-8'), user.password_hash.encode('utf-8')):
         request.session["user"] = user.username
         write_log(f"User {username} logged in")
@@ -448,12 +448,12 @@ async def sync_servers_endpoint(request: Request):
 async def list_categories(request: Request):
     if "user" not in request.session:
         return RedirectResponse(url="/login", status_code=302)
-
+    
     db = SessionLocal()
     current_user = db.query(User).filter(User.username == request.session["user"]).first()
     categories = db.query(Category).all()
     db.close()
-
+    
     return templates.TemplateResponse("categories.html", {"request": request, "categories": categories, "user": current_user})
 
 @app.get("/categories/new", response_class=HTMLResponse)
@@ -660,4 +660,75 @@ async def clear_logs(request: Request):
     except Exception as e:
         print(f"Error clearing logs: {str(e)}")
         return RedirectResponse(url="/logs?error=clear_failed", status_code=303)
+
+@app.get("/api/telegram/chats")
+async def get_telegram_chats(request: Request):
+    """Get list of configured Telegram chat IDs."""
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    db.close()
+
+    if not current_user or not current_user.is_admin:
+        return RedirectResponse(url="/", status_code=302)
+
+    return {"chat_ids": load_chat_ids()}
+
+@app.post("/api/telegram/chats/add")
+async def add_telegram_chat(request: Request, chat_id: str = Form(...)):
+    """Add a new Telegram chat ID."""
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    db.close()
+
+    if not current_user or not current_user.is_admin:
+        return RedirectResponse(url="/", status_code=302)
+
+    if add_chat_id(chat_id):
+        write_log(f"Added new Telegram chat ID: {chat_id}")
+        send_telegram_message(f"*📱 New Chat Added*\nChat ID: {chat_id}\nAdded by: {current_user.username}")
+        return {"status": "success", "message": "Chat ID added successfully"}
+    return {"status": "error", "message": "Failed to add chat ID"}
+
+@app.post("/api/telegram/chats/remove")
+async def remove_telegram_chat(request: Request, chat_id: str = Form(...)):
+    """Remove a Telegram chat ID."""
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    db.close()
+
+    if not current_user or not current_user.is_admin:
+        return RedirectResponse(url="/", status_code=302)
+
+    if remove_chat_id(chat_id):
+        write_log(f"Removed Telegram chat ID: {chat_id}")
+        send_telegram_message(f"*📱 Chat Removed*\nChat ID: {chat_id}\nRemoved by: {current_user.username}")
+        return {"status": "success", "message": "Chat ID removed successfully"}
+    return {"status": "error", "message": "Failed to remove chat ID"}
+
+@app.get("/telegram-chats")
+async def telegram_chats(request: Request):
+    """Telegram chat management page."""
+    if "user" not in request.session:
+        return RedirectResponse(url="/login", status_code=302)
+
+    db = SessionLocal()
+    current_user = db.query(User).filter(User.username == request.session["user"]).first()
+    db.close()
+
+    if not current_user or not current_user.is_admin:
+        return RedirectResponse(url="/", status_code=302)
+
+    return templates.TemplateResponse("telegram_chats.html", {
+        "request": request,
+        "user": current_user
+    })
 

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Telegram Chat Management</h5>
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addChatModal">
+                        Add New Chat
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Chat ID</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="chatList">
+                                <!-- Chat IDs will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Chat Modal -->
+<div class="modal fade" id="addChatModal" tabindex="-1" aria-labelledby="addChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addChatModalLabel">Add New Telegram Chat</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addChatForm">
+                    <div class="mb-3">
+                        <label for="chatId" class="form-label">Chat ID</label>
+                        <input type="text" class="form-control" id="chatId" required>
+                        <div class="form-text">Enter the Telegram chat ID to add</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addChat()">Add Chat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load chat IDs on page load
+document.addEventListener('DOMContentLoaded', loadChats);
+
+async function loadChats() {
+    try {
+        const response = await fetch('/api/telegram/chats');
+        const data = await response.json();
+        const chatList = document.getElementById('chatList');
+        chatList.innerHTML = '';
+        
+        data.chat_ids.forEach(chatId => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${chatId}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" onclick="removeChat('${chatId}')">Remove</button>
+                </td>
+            `;
+            chatList.appendChild(row);
+        });
+    } catch (error) {
+        console.error('Error loading chats:', error);
+        alert('Failed to load chat IDs');
+    }
+}
+
+async function addChat() {
+    const chatId = document.getElementById('chatId').value;
+    if (!chatId) {
+        alert('Please enter a chat ID');
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+
+        const response = await fetch('/api/telegram/chats/add', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            alert('Chat ID added successfully');
+            document.getElementById('chatId').value = '';
+            bootstrap.Modal.getInstance(document.getElementById('addChatModal')).hide();
+            loadChats();
+        } else {
+            alert(data.message || 'Failed to add chat ID');
+        }
+    } catch (error) {
+        console.error('Error adding chat:', error);
+        alert('Failed to add chat ID');
+    }
+}
+
+async function removeChat(chatId) {
+    if (!confirm('Are you sure you want to remove this chat ID?')) {
+        return;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append('chat_id', chatId);
+
+        const response = await fetch('/api/telegram/chats/remove', {
+            method: 'POST',
+            body: formData
+        });
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            alert('Chat ID removed successfully');
+            loadChats();
+        } else {
+            alert(data.message || 'Failed to remove chat ID');
+        }
+    } catch (error) {
+        console.error('Error removing chat:', error);
+        alert('Failed to remove chat ID');
+    }
+}
+</script>
+{% endblock %} 
