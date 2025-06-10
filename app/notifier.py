@@ -2,9 +2,10 @@ import requests
 import json
 from typing import List, Optional
 from pathlib import Path
+import os
 
 TELEGRAM_TOKEN = "7667485819:AAH_LB_fOhac1v47Az1pgH3tfAZw0QSPDrk"
-CONFIG_FILE = "telegram_config.json"
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "telegram_config.json")
 
 def load_chat_ids() -> List[str]:
     """Load chat IDs from config file."""
